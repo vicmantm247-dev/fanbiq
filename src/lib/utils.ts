@@ -1,0 +1,74 @@
+import { isAxiosError } from "axios";
+import { clsx, type ClassValue } from "clsx"
+import { twMerge } from "tailwind-merge"
+
+export function cn(...inputs: ClassValue[]) {
+  return twMerge(clsx(inputs))
+}
+
+export function seededRandom(seed: string) {
+  let hash = 0;
+  for (let i = 0; i < seed.length; i++) {
+    hash = ((hash << 5) - hash) + seed.charCodeAt(i);
+    hash |= 0;
+  }
+  
+  return function() {
+    hash = (hash * 16807) % 2147483647;
+    return (hash - 1) / 2147483646;
+  };
+}
+
+export function shuffleWithSeed<T>(array: T[], seed: string): T[] {
+  const random = seededRandom(seed);
+  const result = [...array];
+  for (let i = result.length - 1; i > 0; i--) {
+    const j = Math.floor(random() * (i + 1));
+    [result[i], result[j]] = [result[j], result[i]];
+  }
+  return result;
+}
+
+export const ticksToTime = (ticks?: number) => {
+  if (!ticks) return "";
+  const minutes = Math.floor(ticks / 600000000);
+  const h = Math.floor(minutes / 60);
+  const m = minutes % 60;
+  return `${h}:${m.toString().padStart(2, '0')}`;
+};
+
+export function getErrorMessage(error: unknown, fallback: string = "An unexpected error occurred") {
+  // If it's an Axios error, look inside the response
+  if (isAxiosError(error)) {
+    const serverMessage = error.response?.data?.message || error?.response?.data?.error;
+    if (serverMessage) return serverMessage;
+    
+    // Fallback for network errors (no response)
+    if (error.code === 'ECONNABORTED') return "Request timed out";
+    if (!error.response) return "Cannot connect to server";
+  }
+
+  // If it's a standard Error object
+  if (error instanceof Error) return error.message;
+
+  if (typeof error === "string") return error;
+
+  // Final fallback
+  return fallback;
+}
+
+export function generateOTP(): string {
+  return Math.floor(100000 + Math.random() * 900000).toString();
+}
+
+export async function parseJsonResponse<T = any>(response: Response): Promise<T> {
+  const text = await response.text();
+  if (!text) return {} as T;
+  try {
+    return JSON.parse(text) as T;
+  } catch (err) {
+    const snippet = text.slice(0, 200).replace(/\n/g, ' ');
+    throw new Error(`Invalid JSON response: ${snippet}`);
+  }
+}
+

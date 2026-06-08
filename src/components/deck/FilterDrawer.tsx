@@ -1,0 +1,867 @@
+"use client";
+
+import React, { useEffect, useState, useMemo, useCallback } from "react";
+import { VirtuosoGrid } from "react-virtuoso";
+import {
+  Drawer,
+  DrawerContent,
+  DrawerHeader,
+  DrawerTitle,
+} from "@/components/ui/drawer";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Badge } from "@/components/ui/badge";
+import { Slider } from "@/components/ui/slider";
+import { Filters } from "@/types";
+import { RotateCcw, Star, Check, Search, X } from "lucide-react";
+import { Label } from "@/components/ui/label";
+import { Button } from "../ui/button";
+import { Skeleton } from "../ui/skeleton";
+import { Switch } from "../ui/switch";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { useFilters, useThemes, useSession, useWatchProviders, useUserSettings } from "@/hooks/api";
+import { MediaGenre, MediaRating, MediaYear, WatchProvider } from "@/types/media";
+import { OptimizedImage } from "../ui/optimized-image";
+import { UserAvatarList } from "../session/UserAvatarList";
+import { useRuntimeConfig } from "@/lib/runtime-config";
+import { cn } from "@/lib/utils";
+import { LANGUAGES, SORT_OPTIONS, POPULAR_LANGUAGE_CODES, DEFAULT_LANGUAGES } from "@/lib/constants";
+import { CountryFlag } from "../ui/country-flag";
+import { ProviderType } from "@/lib/providers/types";
+import {
+  InputGroup,
+  InputGroupAddon,
+  InputGroupButton,
+  InputGroupInput,
+} from "@/components/ui/input-group";
+
+interface FilterDrawerProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  currentFilters: Filters;
+  onSave: (filters: Filters) => void;
+}
+
+
+export function FilterDrawer({ open, onOpenChange, currentFilters, onSave }: FilterDrawerProps) {
+  const [selectedGenres, setSelectedGenres] = useState<string[]>([]);
+  const [excludedGenres, setExcludedGenres] = useState<string[]>([]);
+  const [genreFilterMode, setGenreFilterMode] = useState<"include" | "exclude">("include");
+  const [selectedRatings, setSelectedRatings] = useState<string[]>([]);
+  const [excludedRatings, setExcludedRatings] = useState<string[]>([]);
+  const [ratingFilterMode, setRatingFilterMode] = useState<"include" | "exclude">("include");
+  const [selectedWatchProviders, setSelectedWatchProviders] = useState<string[]>([]);
+  const [selectedThemes, setSelectedThemes] = useState<string[]>([]);
+  const [excludedThemes, setExcludedThemes] = useState<string[]>([]);
+  const [themeFilterMode, setThemeFilterMode] = useState<"include" | "exclude">("include");
+  const [selectedLanguages, setSelectedLanguages] = useState<string[]>(DEFAULT_LANGUAGES);
+  const [showAllLanguages, setShowAllLanguages] = useState(false);
+  const [sortBy, setSortBy] = useState<string>("Trending");
+  const [unplayedOnly, setUnplayedOnly] = useState<boolean>(true);
+  const [yearRange, setYearRange] = useState<[number, number]>([1900, new Date().getFullYear()]);
+  const [runtimeRange, setRuntimeRange] = useState<[number, number]>([0, 240]);
+  const [minRating, setMinRating] = useState<number>(0);
+  const [providersScrollParent, setProvidersScrollParent] = useState<HTMLElement | null>(null);
+  const [providerSearch, setProviderSearch] = useState<string>("");
+
+  const { data: session } = useSession();
+  const defaultSort = session?.provider === ProviderType.TMDB ? "Popular" : "Trending"; // Popular works better with TMDB
+  const isTmdb = session?.provider === ProviderType.TMDB;
+  const { capabilities, tmdbDefaultRegion } = useRuntimeConfig();
+  const { data: userSettings } = useUserSettings();
+  const watchRegion = session?.provider === ProviderType.TMDB ? (userSettings?.watchRegion || tmdbDefaultRegion) : undefined;
+
+  const { genres, years, ratings, isLoading: isLoadingFilters } = useFilters(open, watchRegion);
+  const { data: themes = [], isLoading: isLoadingThemes } = useThemes(open);
+  const { data: watchProvidersData, isLoading: isLoadingProviders } = useWatchProviders(
+    watchRegion,
+    session?.code
+  );
+
+  const availableWatchProviders = watchProvidersData?.providers || [];
+  const availableWatchProviderIds = useMemo(
+    () => availableWatchProviders.map(p => p.Id),
+    [availableWatchProviders]
+  );
+  const members = watchProvidersData?.members || [];
+  const isLoading = isLoadingFilters || isLoadingThemes || isLoadingProviders;
+
+  const minYearLimit = useMemo(() => {
+    if (!years || years.length === 0) return 1900;
+    const yearNums = years.map((y: MediaYear) => y.Value).filter((n) => !isNaN(n));
+    return yearNums.length > 0 ? Math.min(...yearNums) : 1900;
+  }, [years]);
+
+  const maxYearLimit = useMemo(() => {
+    if (!years || years.length === 0) return new Date().getFullYear();
+    const yearNums = years.map((y: MediaYear) => y.Value).filter((n) => !isNaN(n));
+    return yearNums.length > 0 ? Math.max(...yearNums) : new Date().getFullYear();
+  }, [years]);
+
+
+  const sortOptions = useMemo(() => {
+    return [
+      defaultSort,
+      ...SORT_OPTIONS.filter(option => option !== defaultSort)
+    ];
+  }, [defaultSort]);
+
+  useEffect(() => {
+    if (open) {
+      setSelectedGenres(currentFilters?.genres || []);
+      setSelectedRatings(currentFilters?.officialRatings || []);
+      setSelectedWatchProviders(currentFilters?.watchProviders || availableWatchProviderIds);
+      setSelectedThemes(currentFilters?.themes || []);
+      if (currentFilters?.excludedGenres && currentFilters.excludedGenres.length > 0) {
+        setExcludedGenres(currentFilters.excludedGenres);
+        setSelectedGenres([]);
+        setGenreFilterMode("exclude");
+      } else {
+        setExcludedGenres([]);
+        setGenreFilterMode("include");
+      }
+      if (currentFilters?.excludedOfficialRatings && currentFilters.excludedOfficialRatings.length > 0) {
+        setExcludedRatings(currentFilters.excludedOfficialRatings);
+        setSelectedRatings([]);
+        setRatingFilterMode("exclude");
+      } else {
+        setExcludedRatings([]);
+        setRatingFilterMode("include");
+      }
+      if (currentFilters?.excludedThemes && currentFilters.excludedThemes.length > 0) {
+        setExcludedThemes(currentFilters.excludedThemes);
+        setSelectedThemes([]);
+        setThemeFilterMode("exclude");
+      } else {
+        setExcludedThemes([]);
+        setThemeFilterMode("include");
+      }
+      setSelectedLanguages(currentFilters?.tmdbLanguages ?? DEFAULT_LANGUAGES);
+      setSortBy(currentFilters?.sortBy || defaultSort);
+      setUnplayedOnly(currentFilters?.unplayedOnly ?? true);
+      setYearRange(currentFilters?.yearRange || [minYearLimit, maxYearLimit]);
+      setRuntimeRange(currentFilters?.runtimeRange || [0, 240]);
+      setMinRating(currentFilters?.minCommunityRating || 0);
+      setProviderSearch("");
+    }
+  }, [open, currentFilters, availableWatchProviderIds, minYearLimit, maxYearLimit, defaultSort]);
+
+  const normalizeFilters = (f: Filters): Filters => {
+    const isYearDefault = !f.yearRange || (f.yearRange[0] === minYearLimit && f.yearRange[1] === maxYearLimit);
+    const isRuntimeDefault = !f.runtimeRange || (f.runtimeRange[0] === 0 && f.runtimeRange[1] === 240);
+    const isLanguageDefault = !f.tmdbLanguages ||
+      (f.tmdbLanguages.length === DEFAULT_LANGUAGES.length &&
+        f.tmdbLanguages.every((lang) => DEFAULT_LANGUAGES.includes(lang)));
+
+    // Logic: 
+    // - If all providers are selected OR none are selected, we treat it as "no filter" (undefined)
+    // - If a specific subset is selected, we send the explicit list
+    const isWatchProvidersDefault = !f.watchProviders ||
+      f.watchProviders.length === 0 ||
+      f.watchProviders.length === availableWatchProviderIds.length;
+
+    return {
+      genres: f.genres?.length ? f.genres : [],
+      excludedGenres: f.excludedGenres?.length ? f.excludedGenres : undefined,
+      officialRatings: f.officialRatings?.length ? f.officialRatings : undefined,
+      excludedOfficialRatings: f.excludedOfficialRatings?.length ? f.excludedOfficialRatings : undefined,
+      watchProviders: isWatchProvidersDefault ? undefined : f.watchProviders,
+      themes: f.themes?.length ? f.themes : undefined,
+      excludedThemes: f.excludedThemes?.length ? f.excludedThemes : undefined,
+      tmdbLanguages: isLanguageDefault ? undefined : f.tmdbLanguages,
+      sortBy: (f.sortBy === defaultSort || !f.sortBy) ? undefined : f.sortBy,
+      unplayedOnly: f.unplayedOnly ?? true,
+      yearRange: isYearDefault ? undefined : f.yearRange,
+      runtimeRange: isRuntimeDefault ? undefined : f.runtimeRange,
+      minCommunityRating: (f.minCommunityRating && f.minCommunityRating > 0) ? f.minCommunityRating : undefined
+    };
+  };
+
+  const getCurrentFiltersObject = (): Filters => {
+    return normalizeFilters({
+      genres: selectedGenres,
+      excludedGenres,
+      officialRatings: selectedRatings,
+      excludedOfficialRatings: excludedRatings,
+      watchProviders: selectedWatchProviders,
+      themes: selectedThemes,
+      excludedThemes,
+      tmdbLanguages: selectedLanguages,
+      sortBy: sortBy,
+      unplayedOnly: unplayedOnly,
+      yearRange: yearRange,
+      runtimeRange: runtimeRange,
+      minCommunityRating: minRating
+    });
+  };
+
+  const handleOpenChange = (newOpen: boolean) => {
+    if (!newOpen) {
+      const newFilters = getCurrentFiltersObject();
+      const currentFiltersNorm = normalizeFilters(currentFilters);
+
+      if (JSON.stringify(newFilters) !== JSON.stringify(currentFiltersNorm)) {
+        onSave(newFilters);
+      }
+    }
+    onOpenChange(newOpen);
+  };
+
+  const formatRuntime = (mins: number) => {
+    const h = Math.floor(mins / 60);
+    const m = mins % 60;
+    return `${h}:${m.toString().padStart(2, '0')}`;
+  };
+
+  const resetAll = () => {
+    setSelectedGenres([]);
+    setExcludedGenres([]);
+    setGenreFilterMode("include");
+    setSelectedRatings([]);
+    setExcludedRatings([]);
+    setRatingFilterMode("include");
+    setSelectedWatchProviders(availableWatchProviderIds);
+    setSelectedThemes([]);
+    setExcludedThemes([]);
+    setThemeFilterMode("include");
+    setSelectedLanguages(DEFAULT_LANGUAGES);
+    setShowAllLanguages(false);
+    setSortBy(defaultSort);
+    setUnplayedOnly(true);
+    setYearRange([minYearLimit, maxYearLimit]);
+    setRuntimeRange([0, 240]);
+    setMinRating(0);
+    setProviderSearch("");
+  };
+
+  const filteredSortOptions = sortOptions;
+  const gap = 12;
+  const popularLanguageSet = useMemo(() => new Set(POPULAR_LANGUAGE_CODES), []);
+  const popularLanguages = useMemo(
+    () => LANGUAGES.filter((lang) => popularLanguageSet.has(lang.code)),
+    [popularLanguageSet]
+  );
+  const moreLanguages = useMemo(
+    () => LANGUAGES.filter((lang) => !popularLanguageSet.has(lang.code)),
+    [popularLanguageSet]
+  );
+
+  const toggleGenre = (genreName: string) => {
+    if (genreFilterMode === "exclude") {
+      setExcludedGenres(prev => prev.includes(genreName) ? prev.filter(g => g !== genreName) : [...prev, genreName]);
+    } else {
+      setSelectedGenres(prev => prev.includes(genreName) ? prev.filter(g => g !== genreName) : [...prev, genreName]);
+    }
+  };
+
+  const handleGenreModeChange = (value: string) => {
+    if (!value) return;
+    const next = value as "include" | "exclude";
+    if (next === genreFilterMode) return;
+    if (next === "exclude") {
+      setExcludedGenres(selectedGenres);
+      setSelectedGenres([]);
+    } else {
+      setSelectedGenres(excludedGenres);
+      setExcludedGenres([]);
+    }
+    setGenreFilterMode(next);
+  };
+
+  const toggleTheme = (theme: string) => {
+    if (themeFilterMode === "exclude") {
+      setExcludedThemes(prev => prev.includes(theme) ? prev.filter(t => t !== theme) : [...prev, theme]);
+    } else {
+      setSelectedThemes(prev => prev.includes(theme) ? prev.filter(t => t !== theme) : [...prev, theme]);
+    }
+  };
+
+  const handleThemeModeChange = (value: string) => {
+    if (!value) return;
+    const next = value as "include" | "exclude";
+    if (next === themeFilterMode) return;
+    if (next === "exclude") {
+      setExcludedThemes(selectedThemes);
+      setSelectedThemes([]);
+    } else {
+      setSelectedThemes(excludedThemes);
+      setExcludedThemes([]);
+    }
+    setThemeFilterMode(next);
+  };
+
+  const toggleRating = (ratingValue: string) => {
+    if (ratingFilterMode === "exclude") {
+      setExcludedRatings(prev => prev.includes(ratingValue) ? prev.filter(r => r !== ratingValue) : [...prev, ratingValue]);
+    } else {
+      setSelectedRatings(prev => prev.includes(ratingValue) ? prev.filter(r => r !== ratingValue) : [...prev, ratingValue]);
+    }
+  };
+
+  const handleRatingModeChange = (value: string) => {
+    if (!value) return;
+    const next = value as "include" | "exclude";
+    if (next === ratingFilterMode) return;
+    if (next === "exclude") {
+      setExcludedRatings(selectedRatings);
+      setSelectedRatings([]);
+    } else {
+      setSelectedRatings(excludedRatings);
+      setExcludedRatings([]);
+    }
+    setRatingFilterMode(next);
+  };
+
+  const gridComponents = useMemo(() => ({
+    List: ({ children, style, ...props }: React.ComponentProps<"div">) => (
+      <div
+        {...props}
+        style={{
+          ...style,
+          display: "grid",
+          gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+          gap: `${gap}px`,
+        }}
+      >
+        {children}
+      </div>
+    ),
+    Item: ({ children, ...props }: React.ComponentProps<"div">) => (
+      <div {...props} className="w-full">
+        {children}
+      </div>
+    ),
+  }), [gap]);
+
+  const handleProvidersViewport = useCallback((node: HTMLDivElement | null) => {
+    setProvidersScrollParent(node);
+  }, []);
+
+  const filteredWatchProviders = useMemo(() => {
+    const query = providerSearch.trim().toLowerCase();
+    if (!query) return availableWatchProviders;
+    return availableWatchProviders.filter((provider) =>
+      provider.Name?.toLowerCase().includes(query)
+    );
+  }, [availableWatchProviders, providerSearch]);
+
+  return (
+    <Drawer open={open} onOpenChange={handleOpenChange}>
+      <DrawerContent className="h-[66vh] flex flex-col">
+        <DrawerHeader className="border-b pb-4 shrink-0 relative">
+          <DrawerTitle className="text-center w-full">
+            Filters
+          </DrawerTitle>
+          <Button
+            variant="ghost"
+            size='sm'
+            className="h-8 gap-2 text-muted-foreground hover:text-foreground text-xs absolute right-4 top-4"
+            onClick={resetAll}
+          >
+            <RotateCcw className="size-3" />
+            Reset
+          </Button>
+        </DrawerHeader>
+
+        <ScrollArea className="flex-1 overflow-y-auto" viewportRef={handleProvidersViewport}>
+          <div className="flex flex-col gap-10 pt-6 pb-12 px-6">
+            {isLoading ? (
+              <div className="space-y-10">
+                {[1, 2, 3].map((i) => (
+                  <div key={i} className="space-y-4">
+                    <Skeleton className="h-6 w-24" />
+                    <Skeleton className="h-12 w-full rounded-xl" />
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <>
+                {/* Sort Section */}
+                <div className="space-y-4 -mb-4">
+                  <div className="flex flex-wrap gap-2">
+                    {filteredSortOptions.map((option) => (
+                      <Badge
+                        key={option}
+                        variant={sortBy === option ? "default" : "outline"}
+                        className="cursor-pointer text-sm py-1.5 px-4 rounded-full transition-colors"
+                        onClick={() => setSortBy(option)}
+                      >
+                        {option}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Watched Section */}
+                {capabilities.hasAuth && (
+                  <div className="flex items-center justify-between p-4 rounded-2xl bg-muted/30 border border-border/50">
+                    <div className="space-y-0.5">
+                      <Label className="text-sm font-semibold tracking-tight">Hide Watched</Label>
+                      <p className="text-xs text-muted-foreground font-medium">Only show items you haven't seen yet</p>
+                    </div>
+                    <Switch
+                      checked={unplayedOnly}
+                      onCheckedChange={setUnplayedOnly}
+                    />
+                  </div>
+                )}
+
+                {/* Rating Section */}
+                <div className="space-y-4">
+                  <div className="flex justify-between items-center">
+                    <Label className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Community Rating</Label>
+                    <span className="text-sm font-medium text-primary">
+                      {minRating > 0 ? `${minRating}+ Stars` : "Any"}
+                    </span>
+                  </div>
+                  <div className="flex gap-1 justify-between">
+                    {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((star) => (
+                      <button
+                        key={star}
+                        onClick={() => setMinRating(star === minRating ? 0 : star)}
+                        className="focus:outline-none transition-transform active:scale-90"
+                      >
+                        <Star
+                          className={cn(
+                            "size-6 transition-colors",
+                            star <= minRating ? "fill-primary text-primary" : "text-muted-foreground/30"
+                          )}
+                        />
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Release Section */}
+                <div className="space-y-6">
+                  <div className="flex justify-between items-center">
+                    <Label className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Release Year</Label>
+                    <Badge variant="secondary" className="font-mono">
+                      {yearRange[0]} — {yearRange[1]}
+                    </Badge>
+                  </div>
+                  <div className="px-2">
+                    <Slider
+                      value={yearRange}
+                      min={minYearLimit}
+                      max={maxYearLimit}
+                      step={1}
+                      onValueChange={(val) => setYearRange(val as [number, number])}
+                    />
+                  </div>
+                </div>
+
+                {/* Runtime Section */}
+                <div className="space-y-6">
+                  <div className="flex justify-between items-center">
+                    <Label className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Runtime</Label>
+                    <Badge variant="secondary" className="font-mono">
+                      {formatRuntime(runtimeRange[0])} — {runtimeRange[1] === 240 ? "4:00+" : formatRuntime(runtimeRange[1])}
+                    </Badge>
+                  </div>
+                  <div className="px-2">
+                    <Slider
+                      value={runtimeRange}
+                      min={0}
+                      max={240}
+                      step={5}
+                      onValueChange={(val) => setRuntimeRange(val as [number, number])}
+                    />
+                  </div>
+                </div>
+
+                {/* Genres Section */}
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    <Label className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Genres</Label>
+                    <ToggleGroup
+                      type="single"
+                      variant="outline"
+                      size={'sm'}
+                      value={genreFilterMode}
+                      onValueChange={handleGenreModeChange}
+                      className="flex mr-auto"
+                    >
+                      <ToggleGroupItem value="include" aria-label="Include genres">Include</ToggleGroupItem>
+                      <ToggleGroupItem value="exclude" aria-label="Exclude genres">Exclude</ToggleGroupItem>
+                    </ToggleGroup>
+                    <div className="flex gap-3">
+                      <button
+                        onClick={() => {
+                          if (genreFilterMode === "exclude") {
+                            setExcludedGenres(genres.map(g => g.Name));
+                            setSelectedGenres([]);
+                          } else {
+                            setSelectedGenres(genres.map(g => g.Name));
+                            setExcludedGenres([]);
+                          }
+                        }}
+                        className="text-xs font-semibold cursor-pointer text-primary hover:underline"
+                      >
+                        Select all
+                      </button>
+                      <button
+                        onClick={() => {
+                          if (genreFilterMode === "exclude") {
+                            setExcludedGenres([]);
+                          } else {
+                            setSelectedGenres([]);
+                          }
+                        }}
+                        className="text-xs font-semibold cursor-pointer text-muted-foreground hover:underline"
+                      >
+                        Clear
+                      </button>
+                    </div>
+                  </div>
+                </div>
+                  <div className="flex flex-wrap gap-2">
+                    {genres?.map((genre: MediaGenre) => {
+                      const isSelected = genreFilterMode === "exclude"
+                        ? excludedGenres.includes(genre.Name)
+                        : selectedGenres.includes(genre.Name);
+                      return (
+                        <Badge
+                          key={genre.Id}
+                          variant={isSelected ? "default" : "outline"}
+                          className={cn(
+                            "cursor-pointer text-sm py-1.5 px-4 rounded-full",
+                            genreFilterMode === "exclude" && isSelected && "bg-muted text-muted-foreground border-muted"
+                          )}
+                          onClick={() => toggleGenre(genre.Name)}
+                        >
+                          {genre.Name}
+                        </Badge>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Themes Section */}
+                {themes.length > 0 && (
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <div className="flex flex-wrap items-center justify-between gap-3">
+                        <Label className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Themes</Label>
+                        <ToggleGroup
+                          type="single"
+                          variant="outline"
+                          size={'sm'}
+                          value={themeFilterMode}
+                          onValueChange={handleThemeModeChange}
+                          className="flex mr-auto"
+                        >
+                          <ToggleGroupItem value="include" aria-label="Include themes">Include</ToggleGroupItem>
+                          <ToggleGroupItem value="exclude" aria-label="Exclude themes">Exclude</ToggleGroupItem>
+                        </ToggleGroup>
+                        <div className="flex gap-3">
+                          <button
+                            onClick={() => {
+                              if (themeFilterMode === "exclude") {
+                                setExcludedThemes(themes);
+                                setSelectedThemes([]);
+                              } else {
+                                setSelectedThemes(themes);
+                                setExcludedThemes([]);
+                              }
+                            }}
+                            className="text-xs font-semibold cursor-pointer text-primary hover:underline"
+                          >
+                            Select all
+                          </button>
+                          <button
+                            onClick={() => {
+                              if (themeFilterMode === "exclude") {
+                                setExcludedThemes([]);
+                              } else {
+                                setSelectedThemes([]);
+                              }
+                            }}
+                            className="text-xs font-semibold cursor-pointer text-muted-foreground hover:underline"
+                          >
+                            Clear
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      {themes.map((theme: string) => {
+                        const isSelected = themeFilterMode === "exclude"
+                          ? excludedThemes.includes(theme)
+                          : selectedThemes.includes(theme);
+                        return (
+                          <Badge
+                            key={theme}
+                            variant={isSelected ? "default" : "outline"}
+                            className={cn(
+                              "cursor-pointer text-sm py-1.5 px-4 rounded-full",
+                              themeFilterMode === "exclude" && isSelected && "bg-muted text-muted-foreground border-muted"
+                            )}
+                            onClick={() => toggleTheme(theme)}
+                          >
+                            {theme}
+                          </Badge>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {/* Maturity Ratings Section */}
+                {ratings && ratings.length > 0 && (
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <div className="flex flex-wrap items-center justify-between gap-3">
+                        <div className="flex items-center gap-2">
+                          <Label className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
+                            Maturity rating
+                          </Label>
+                          {watchRegion && (
+                            <Badge variant="outline" className="gap-1.5 py-0.5 px-2 h-5 font-bold opacity-80 bg-muted/30">
+                              <div className="w-4 h-3 overflow-hidden rounded-[2px] shrink-0">
+                                <CountryFlag countryCode={watchRegion} />
+                              </div>
+                            </Badge>
+                          )}
+                        </div>
+                        <ToggleGroup
+                          type="single"
+                          variant="outline"
+                          size={'sm'}
+                          value={ratingFilterMode}
+                          onValueChange={handleRatingModeChange}
+                          className="flex mr-auto"
+                        >
+                          <ToggleGroupItem value="include" aria-label="Include ratings">Include</ToggleGroupItem>
+                          <ToggleGroupItem value="exclude" aria-label="Exclude ratings">Exclude</ToggleGroupItem>
+                        </ToggleGroup>
+                        <div className="flex gap-3">
+                          <button
+                            onClick={() => {
+                              if (ratingFilterMode === "exclude") {
+                                setExcludedRatings(ratings.map(r => r.Value));
+                                setSelectedRatings([]);
+                              } else {
+                                setSelectedRatings(ratings.map(r => r.Value));
+                                setExcludedRatings([]);
+                              }
+                            }}
+                            className="text-xs font-semibold cursor-pointer text-primary hover:underline"
+                          >
+                            Select all
+                          </button>
+                          <button
+                            onClick={() => {
+                              if (ratingFilterMode === "exclude") {
+                                setExcludedRatings([]);
+                              } else {
+                                setSelectedRatings([]);
+                              }
+                            }}
+                            className="text-xs font-semibold cursor-pointer text-muted-foreground hover:underline"
+                          >
+                            Clear
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      {ratings.map((rating: MediaRating) => {
+                        const isSelected = ratingFilterMode === "exclude"
+                          ? excludedRatings.includes(rating.Value)
+                          : selectedRatings.includes(rating.Value);
+                        return (
+                          <Badge
+                            key={rating.Value}
+                            variant={isSelected ? "default" : "outline"}
+                            className={cn(
+                              "cursor-pointer text-sm py-1.5 px-4 rounded-full",
+                              ratingFilterMode === "exclude" && isSelected && "bg-muted text-muted-foreground border-muted"
+                            )}
+                            onClick={() => toggleRating(rating.Value)}
+                          >
+                            {rating.Name}
+                          </Badge>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {/* Language Section */}
+                {isTmdb && (
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <Label className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Language</Label>
+                      <button
+                        onClick={() => setSelectedLanguages([])}
+                        className="text-xs font-semibold cursor-pointer text-muted-foreground hover:underline"
+                      >
+                        Any language
+                      </button>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      {popularLanguages.map((lang) => (
+                        <Badge
+                          key={lang.code}
+                          variant={selectedLanguages.includes(lang.code) ? "secondary" : "outline"}
+                          className={cn(
+                            "cursor-pointer text-sm py-1.5 px-4 rounded-full",
+                            selectedLanguages.includes(lang.code) && "bg-primary/20 text-primary border-primary/30"
+                          )}
+                          onClick={() => setSelectedLanguages([lang.code])}
+                        >
+                          {lang.name}
+                        </Badge>
+                      ))}
+                    </div>
+                    {showAllLanguages && (
+                      <div className="flex flex-wrap gap-2">
+                        {moreLanguages.map((lang) => (
+                          <Badge
+                            key={lang.code}
+                            variant={selectedLanguages.includes(lang.code) ? "secondary" : "outline"}
+                            className={cn(
+                              "cursor-pointer text-sm py-1.5 px-4 rounded-full",
+                              selectedLanguages.includes(lang.code) && "bg-primary/20 text-primary border-primary/30"
+                            )}
+                            onClick={() => setSelectedLanguages([lang.code])}
+                          >
+                            {lang.name}
+                          </Badge>
+                        ))}
+                      </div>
+                    )}
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-8 px-2 text-xs"
+                      onClick={() => setShowAllLanguages((prev) => !prev)}
+                    >
+                      {showAllLanguages ? "Show less" : "See more"}
+                    </Button>
+                  </div>
+                )}
+
+                {/* Watch Providers Section */}
+                {capabilities.hasStreamingSettings && availableWatchProviders.length > 0 && (
+                  <div className="space-y-4">
+                    <div className="flex justify-between items-center">
+                      <div className="flex items-center gap-2">
+                        <Label className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
+                          Streaming Services
+                        </Label>
+                        {watchRegion && (
+                          <Badge variant="outline" className="gap-1.5 py-0.5 px-2 h-5 font-bold opacity-80 bg-muted/30">
+                            <div className="w-4 h-3 overflow-hidden rounded-[2px] shrink-0">
+                              <CountryFlag countryCode={watchRegion} />
+                            </div>
+                          </Badge>
+                        )}
+                      </div>
+                        <div className="flex gap-3">
+                          <button onClick={() => setSelectedWatchProviders(availableWatchProviderIds)} className="text-xs font-semibold cursor-pointer text-primary hover:underline">Select all</button>
+                          <button onClick={() => setSelectedWatchProviders([])} className="text-xs font-semibold cursor-pointer text-muted-foreground hover:underline">Clear</button>
+                        </div>
+                      </div>
+                      <InputGroup className="bg-muted/30 border-input">
+                        <InputGroupAddon align="inline-start">
+                          <Search className="size-4" />
+                        </InputGroupAddon>
+                        <InputGroupInput
+                          placeholder="Search services..."
+                          value={providerSearch}
+                          onChange={(event) => setProviderSearch(event.target.value)}
+                        />
+                        <InputGroupAddon align="inline-end">
+                          {providerSearch ? (
+                            <InputGroupButton
+                              variant="ghost"
+                              size="icon-xs"
+                              aria-label="Clear search"
+                              onClick={() => setProviderSearch("")}
+                            >
+                              <X className="size-4" />
+                            </InputGroupButton>
+                          ) : null}
+                        </InputGroupAddon>
+                      </InputGroup>
+                      {filteredWatchProviders.length === 0 ? (
+                        <div className="text-xs text-center py-4 text-muted-foreground border rounded-md border-dashed">
+                          No services match your search
+                        </div>
+                      ) : (
+                        <VirtuosoGrid
+                          data={filteredWatchProviders}
+                          components={gridComponents}
+                          style={{ height: "100%" }}
+                          customScrollParent={providersScrollParent || undefined}
+                          itemContent={(_, provider) => {
+                            const isSelected = selectedWatchProviders.includes(provider.Id);
+                            const providerMembers = (provider.MemberUserIds || [])
+                              .map(id => {
+                                const m = members.find(member => member.externalUserId === id);
+                                if (!m) return null;
+                                return {
+                                  userId: m.externalUserId,
+                                  userName: m.externalUserName,
+                                  hasCustomProfilePicture: !!m.hasCustomProfilePicture,
+                                  profileUpdatedAt: m.profileUpdatedAt
+                                };
+                              })
+                              .filter(Boolean) as { userId: string, userName: string, hasCustomProfilePicture?: boolean, profileUpdatedAt?: string }[];
+
+                            return (
+                              <button
+                                onClick={() => setSelectedWatchProviders(prev => prev.includes(provider.Id) ? prev.filter(id => id !== provider.Id) : [...prev, provider.Id])}
+                                className={cn(
+                                  "relative flex items-center gap-3 p-3 rounded-xl border transition-all text-left cursor-pointer w-full",
+                                  isSelected
+                                    ? "bg-primary/5 border-primary shadow-sm"
+                                    : "bg-background border-input text-muted-foreground opacity-85 grayscale-[0.5]"
+                                )}
+                              >
+                                <div className="relative size-10 shrink-0 rounded-lg overflow-hidden border">
+                                  <OptimizedImage
+                                    src={`https://image.tmdb.org/t/p/w92${provider.LogoPath}`}
+                                    alt={provider.Name}
+                                    className="object-cover"
+                                    unoptimized
+                                    width={40}
+                                    height={40}
+                                  />
+                                </div>
+                                <div className="flex flex-col min-w-0 flex-1">
+                                  <span className="text-xs font-bold truncate">{provider.Name}</span>
+                                  {providerMembers.length > 0 && (
+                                    <UserAvatarList
+                                      users={providerMembers.map(m => ({
+                                        userId: m.userId,
+                                        userName: m.userName,
+                                        hasCustomProfilePicture: !!m.hasCustomProfilePicture,
+                                        profileUpdatedAt: m.profileUpdatedAt
+                                      }))}
+                                      size="sm"
+                                      className="mt-1"
+                                    />
+                                  )}
+                                </div>
+                                {isSelected && (
+                                  <Check className="size-4 text-primary shrink-0 stroke-3" />
+                                )}
+                              </button>
+                            );
+                          }}
+                        />
+                      )}
+                  </div>
+                )}
+
+              </>
+            )}
+          </div>
+        </ScrollArea>
+      </DrawerContent>
+    </Drawer>
+  );
+}

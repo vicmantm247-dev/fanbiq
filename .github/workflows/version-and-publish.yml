@@ -1,0 +1,210 @@
+name: Version and Publish
+
+on:
+  push:
+    branches: [master, develop]
+    paths-ignore:
+      - 'README.md'
+      - '.github/CONTRIBUTING.md'
+      - '.github/FUNDING.yml'
+      - 'LICENSE'
+      - '.gitignore'
+  workflow_dispatch:
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: m3sserstudi0s/swiparr
+
+jobs:
+  release:
+    name: Semantic Release (master only)
+    if: github.ref_name == 'master' && github.repository != 'jakobbjelver/swiparr'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write   # required to create tags/releases
+      issues: write     # semantic-release/github may comment/link issues
+      pull-requests: write
+    outputs:
+      published: ${{ steps.semrel.outputs.new_release_published }}
+      version: ${{ steps.semrel.outputs.new_release_version }}
+      git_tag: ${{ steps.semrel.outputs.new_release_git_tag }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Semantic Release
+        id: semrel
+        uses: cycjimmy/semantic-release-action@v4
+        with:
+          semantic_version: 23
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  sync_fork:
+    name: Sync fork (only when a release is published)
+    needs: release
+    if: needs.release.outputs.published == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false   # don't keep GITHUB_TOKEN auth header
+      - name: Sync fork (master + tags)
+        env:
+          SYNC_TOKEN: ${{ secrets.FORK_SYNC_TOKEN }}
+        run: |
+          # Add fork remote using PAT
+          git remote add fork "https://jakobbjelver:${SYNC_TOKEN}@github.com/jakobbjelver/swiparr.git"
+
+          # Sync master branch
+          git push fork HEAD:master --force
+
+          # Sync tags
+          git push fork --tags --force
+
+  # Build each platform on its own native runner (no QEMU emulation).
+  # Each job pushes a digest-only image (no tag) and uploads its digest
+  # as an artifact for the merge job below.
+  build:
+    name: Build image (${{ matrix.platform }})
+    needs: [release, sync_fork]
+    if: |
+      always() &&
+      (
+        github.ref_name == 'develop' ||
+        (github.ref_name == 'master' && needs.release.outputs.published == 'true')
+      ) &&
+      (needs.release.result == 'success' || needs.release.result == 'skipped') &&
+      (needs.sync_fork.result == 'success' || needs.sync_fork.result == 'skipped')
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: linux/amd64
+            runner: ubuntu-latest
+          - platform: linux/arm64
+            runner: ubuntu-24.04-arm
+    runs-on: ${{ matrix.runner }}
+    permissions:
+      packages: write
+      contents: read
+    outputs:
+      # Both matrix legs write to the same output key; GitHub keeps only the
+      # last-written value, so we pass digests via artifacts instead.
+      image: ${{ steps.build.outputs.imageid }}
+    steps:
+      - name: Compute short sha
+        run: echo "SHORT_SHA=${GITHUB_SHA::7}" >> $GITHUB_ENV
+
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.ref_name == 'master' && needs.release.outputs.git_tag || github.sha }}
+
+      - uses: docker/setup-buildx-action@v3
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+
+      - name: Build and push (digest only, no tag)
+        id: build
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          platforms: ${{ matrix.platform }}
+          # Push a tagless digest so we can assemble the manifest in the next job
+          outputs: type=image,name=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }},push-by-digest=true,name-canonical=true,push=true
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha,scope=${{ matrix.platform }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.platform }}
+          build-args: |
+            APP_VERSION=${{ github.ref_name == 'master' && format('v{0}', needs.release.outputs.version) || format('dev-{0}', env.SHORT_SHA) }}
+
+      - name: Export digest
+        run: |
+          mkdir -p /tmp/digests
+          digest="${{ steps.build.outputs.digest }}"
+          touch "/tmp/digests/${digest#sha256:}"
+
+      - name: Upload digest artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: digest-${{ matrix.runner }}
+          path: /tmp/digests/*
+          if-no-files-found: error
+          retention-days: 1
+
+  # Merge the two platform digests into a single multi-arch manifest and apply tags.
+  merge:
+    name: Merge multi-arch manifest
+    needs: [release, build]
+    if: |
+      always() &&
+      (
+        github.ref_name == 'develop' ||
+        (github.ref_name == 'master' && needs.release.outputs.published == 'true')
+      ) &&
+      (needs.release.result == 'success' || needs.release.result == 'skipped') &&
+      (needs.build.result == 'success')
+    runs-on: ubuntu-latest
+    permissions:
+      packages: write
+      contents: read
+    steps:
+      - name: Compute short sha
+        run: echo "SHORT_SHA=${GITHUB_SHA::7}" >> $GITHUB_ENV
+
+      - name: Download digests
+        uses: actions/download-artifact@v4
+        with:
+          path: /tmp/digests
+          pattern: digest-*
+          merge-multiple: true
+
+      - uses: docker/setup-buildx-action@v3
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            # Stable channel (master releases only)
+            type=raw,value=latest,enable=${{ github.ref_name == 'master' }}
+            type=raw,value=v${{ needs.release.outputs.version }},enable=${{ github.ref_name == 'master' }}
+            type=raw,value=${{ needs.release.outputs.version }},enable=${{ github.ref_name == 'master' }}
+
+            # Dev channel (develop only)
+            type=raw,value=dev,enable=${{ github.ref_name == 'develop' }}
+            type=raw,value=dev-${{ env.SHORT_SHA }},enable=${{ github.ref_name == 'develop' }}
+
+      - name: Create and push multi-arch manifest
+        working-directory: /tmp/digests
+        run: |
+          docker buildx imagetools create \
+            $(jq -cr '.tags | map("-t " + .) | join(" ")' <<< "$DOCKER_METADATA_OUTPUT_JSON") \
+            $(printf '${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}@sha256:%s ' *)
