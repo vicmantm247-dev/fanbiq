@@ -25,7 +25,7 @@ export default function Home() {
   useHotkeys("5", () => setTab("flicks"), []);
 
   return (
-    <main className="relative overflow-hidden h-svh pt-[env(safe-area-inset-top)] font-sans pb-28">
+    <main className="relative overflow-hidden h-svh font-sans pb-28">
       <DynamicBackground show={tab === "swipe"} />
 
       {/* ── Full-screen tab panels ── */}
