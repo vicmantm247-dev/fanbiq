@@ -111,26 +111,6 @@ export function SettingsSidebar() {
                             {/* Navigation */}
                             <SettingsSection title="Navigation">
                                 <div className="space-y-3">
-                                    {sessionStatus?.userName && (
-                                        <Button
-                                            variant="outline"
-                                            className="w-full justify-between font-normal h-12 px-3 py-7"
-                                            asChild
-                                        >
-                                            <Link href={`/${sessionStatus.userName}`} onClick={() => setOpen(false)}>
-                                                <div className="flex items-center justify-between w-full">
-                                                    <div className="flex items-center gap-3">
-                                                        <div className="p-2 bg-primary/10 rounded-md text-primary">
-                                                            <User className="size-4" />
-                                                        </div>
-                                                        <span>My Profile</span>
-                                                    </div>
-                                                    <MessageCircle className="size-4 text-muted-foreground" />
-                                                </div>
-                                            </Link>
-                                        </Button>
-                                    )}
-
                                     <Button
                                         variant="outline"
                                         className="w-full justify-between font-normal h-12 px-3 py-7"

@@ -9,6 +9,7 @@ import { config as appConfig } from "@/lib/config";
 import { Suspense } from 'react';
 import { RuntimeConfigScript } from '@/components/RuntimeConfigScript';
 import { RouteVideoPauseHandler } from '@/components/RouteVideoPauseHandler';
+import { SessionManager } from '@/components/session/SessionManager';
 
 const sansFlex = Zalando_Sans({
   subsets: ['latin'],
@@ -97,6 +98,7 @@ export default async function RootLayout({
         >
           <TouchProvider>
             <RouteVideoPauseHandler />
+            <SessionManager />
             {children}
           </TouchProvider>
         </Providers>

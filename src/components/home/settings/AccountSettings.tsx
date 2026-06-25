@@ -4,7 +4,7 @@ import { Shield, UserPlus, Globe } from "lucide-react";
 import { SettingsSection } from "./SettingsSection";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import Link from "next/link";
 import { useSession } from "@/hooks/api";
 import { useRuntimeConfig } from "@/lib/runtime-config";
 import { ProfilePicturePicker } from "../../profile/ProfilePicturePicker";
@@ -58,26 +58,29 @@ export function AccountSettings() {
 
     return (
         <SettingsSection title="Profile">
-            <div className="flex items-center gap-4 p-3 rounded-lg border bg-muted/50">
-                <ProfilePicturePicker 
-                    currentImage={profileImageUrl}
-                    hasCustomImage={hasCustomProfilePicture}
-                    allowProviderFallback={!!capabilities.hasAuth}
-                    userName={userName}
-                    onUpload={handleUpload}
-                    onDelete={handleDelete}
-                    size="sm"
-                />
-                <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-1.5">
-                        <span className="text-base font-medium truncate">{userName}</span>
-                        {isAdmin && (
-                            <Badge variant='outline' className="text-[10px] h-4 px-1.5 uppercase tracking-wider">
-                                Admin
-                            </Badge>
-                        )}
-                    </div>
-                    <div className="text-xs text-muted-foreground flex items-center gap-1">
+            <Link href={`/${userName}`} className="block">
+                <div className="flex items-center gap-4 p-3 rounded-lg border bg-muted/50 cursor-pointer transition hover:bg-muted/70">
+                    <ProfilePicturePicker 
+                        currentImage={profileImageUrl}
+                        hasCustomImage={hasCustomProfilePicture}
+                        allowProviderFallback={!!capabilities.hasAuth}
+                        userName={userName}
+                        onUpload={handleUpload}
+                        onDelete={handleDelete}
+                        size="sm"
+                    />
+                    <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between gap-2">
+                            <div className="flex items-center gap-1.5">
+                                <span className="text-base font-medium truncate">{userName}</span>
+                                {isAdmin && (
+                                    <Badge variant='outline' className="text-[10px] h-4 px-1.5 uppercase tracking-wider">
+                                        Admin
+                                    </Badge>
+                                )}
+                            </div>
+                        </div>
+                        <div className="text-xs text-muted-foreground flex items-center gap-1">
                         {isGuest ? (
                             <>
                                 <UserPlus className="size-3" />
@@ -97,6 +100,7 @@ export function AccountSettings() {
                     </div>
                 </div>
             </div>
+            </Link>
         </SettingsSection>
     );
 }

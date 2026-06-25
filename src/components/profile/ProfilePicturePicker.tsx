@@ -151,7 +151,10 @@ export function ProfilePicturePicker({
                     !showDashedBorder && "border-2 border-border",
                     !editable && "cursor-default"
                 )}
-                onClick={triggerFilePicker}
+                onClick={(e) => {
+                    e.stopPropagation();
+                    triggerFilePicker();
+                }}
             >
                 <div className="relative size-full overflow-hidden rounded-full bg-muted">
                     {/* Skeleton Layer */}
