@@ -7,7 +7,7 @@ import {
     SheetTitle,
     SheetTrigger,
 } from "@/components/ui/sheet";
-import { Bell, Menu, MessageCircle } from "lucide-react";
+import { Bell, Menu, MessageCircle, Users, Upload, User } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { apiClient } from "@/lib/api-client";
@@ -93,7 +93,7 @@ export function SettingsSidebar() {
             <Sheet open={open} onOpenChange={setOpen}>
                 <SheetTrigger asChild>
                     <Button className="absolute right-6 size-10 hover:bg-muted/30!" variant="ghost" size="icon">
-                        <Menu className="size-5.5" />
+                        <Menu className="size-5.5 text-white" />
                     </Button>
                 </SheetTrigger>
                 <SheetContent className="flex flex-col overflow-hidden">
@@ -110,20 +110,77 @@ export function SettingsSidebar() {
 
                             {/* Navigation */}
                             <SettingsSection title="Navigation">
-                                <Link href="/notifications" onClick={() => setOpen(false)}>
+                                <div className="space-y-3">
+                                    {sessionStatus?.userName && (
+                                        <Button
+                                            variant="outline"
+                                            className="w-full justify-between font-normal h-12 px-3 py-7"
+                                            asChild
+                                        >
+                                            <Link href={`/${sessionStatus.userName}`} onClick={() => setOpen(false)}>
+                                                <div className="flex items-center justify-between w-full">
+                                                    <div className="flex items-center gap-3">
+                                                        <div className="p-2 bg-primary/10 rounded-md text-primary">
+                                                            <User className="size-4" />
+                                                        </div>
+                                                        <span>My Profile</span>
+                                                    </div>
+                                                    <MessageCircle className="size-4 text-muted-foreground" />
+                                                </div>
+                                            </Link>
+                                        </Button>
+                                    )}
+
                                     <Button
                                         variant="outline"
                                         className="w-full justify-between font-normal h-12 px-3 py-7"
+                                        asChild
+                                    >
+                                        <Link href="/notifications" onClick={() => setOpen(false)}>
+                                            <div className="flex items-center justify-between w-full">
+                                                <div className="flex items-center gap-3">
+                                                    <div className="p-2 bg-primary/10 rounded-md text-primary">
+                                                        <Bell className="size-4" />
+                                                    </div>
+                                                    <span>Notifications</span>
+                                                </div>
+                                                <MessageCircle className="size-4 text-muted-foreground" />
+                                            </div>
+                                        </Link>
+                                    </Button>
+
+                                    <Button
+                                        variant="outline"
+                                        className="w-full justify-between font-normal h-12 px-3 py-7"
+                                        onClick={() => { window.dispatchEvent(new Event('fanbiq:open-session')); setOpen(false); }}
                                     >
                                         <div className="flex items-center gap-3">
                                             <div className="p-2 bg-primary/10 rounded-md text-primary">
-                                                <Bell className="size-4" />
+                                                <Users className="size-4" />
                                             </div>
-                                            <span>Notifications</span>
+                                            <span>Sessions</span>
                                         </div>
                                         <MessageCircle className="size-4 text-muted-foreground" />
                                     </Button>
-                                </Link>
+
+                                    <Button
+                                        variant="outline"
+                                        className="w-full justify-between font-normal h-12 px-3 py-7"
+                                        asChild
+                                    >
+                                        <Link href="/flicks/upload" onClick={() => setOpen(false)}>
+                                            <div className="flex items-center justify-between w-full">
+                                                <div className="flex items-center gap-3">
+                                                    <div className="p-2 bg-primary/10 rounded-md text-primary">
+                                                        <Upload className="size-4" />
+                                                    </div>
+                                                    <span>Upload</span>
+                                                </div>
+                                                <MessageCircle className="size-4 text-muted-foreground" />
+                                            </div>
+                                        </Link>
+                                    </Button>
+                                </div>
                             </SettingsSection>
 
                             {/* Settings */}

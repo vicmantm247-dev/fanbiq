@@ -9,6 +9,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Play } from "lucide-react";
+import Link from "next/link";
 import { useRef, useEffect, useCallback } from "react";
 
 export interface SearchMovieResult {
@@ -300,8 +301,8 @@ export function SearchUserCard({ user }: { user: SearchUserResult }) {
         <Avatar className="w-16 h-24 rounded-lg">
           <AvatarFallback className="text-2xl font-semibold rounded-lg">{user.avatarInitials}</AvatarFallback>
         </Avatar>
-        <Button size="sm" variant="secondary" className="w-16 h-8 px-2 text-xs">
-          Follow
+        <Button asChild size="sm" variant="secondary" className="w-16 h-8 px-2 text-xs">
+          <span>Follow</span>
         </Button>
       </div>
 

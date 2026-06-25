@@ -816,8 +816,9 @@ export class MediaService {
     const auth = await AuthService.getEffectiveCredentials(session);
     const provider = getMediaProvider(auth.provider);
     const activeProvider = auth.provider || session.user.provider || ProviderType.JELLYFIN;
+    const isTmdbBasedProvider = activeProvider === ProviderType.TMDB || activeProvider === ProviderType.NATIVE;
 
-    if (activeProvider !== ProviderType.TMDB) {
+    if (!isTmdbBasedProvider) {
       return { providers: [] };
     }
 

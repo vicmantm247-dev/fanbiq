@@ -35,7 +35,9 @@ export async function GET(
                 });
             }
 
-            return new NextResponse(profile.image as any, {
+            const body = Buffer.from(imageValue, 'base64');
+
+            return new NextResponse(body, {
                 headers: {
                     "Content-Type": profile.contentType || "image/webp",
                     "Cache-Control": hasVersion

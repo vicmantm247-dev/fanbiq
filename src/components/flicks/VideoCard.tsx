@@ -10,6 +10,7 @@ import {
   Bookmark,
   Plus,
   Check,
+  Trash2,
 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
@@ -40,6 +41,12 @@ interface VideoCardProps {
   flick: Flick;
   isActive: boolean;
   isFeedActive?: boolean;
+  profileButtonAction?: {
+    label: string;
+    onClick: (event: MouseEvent<HTMLButtonElement>) => void;
+  };
+  hideProfileButton?: boolean;
+  onDelete?: (id: string) => void;
 }
 
 function formatCount(n: number): string {
@@ -108,7 +115,7 @@ const DUMMY_COMMENTS: Comment[] = [
   },
 ];
 
-export function VideoCard({ flick, isActive, isFeedActive }: VideoCardProps) {
+export function VideoCard({ flick, isActive, isFeedActive, profileButtonAction, hideProfileButton, onDelete }: VideoCardProps) {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const [liked, setLiked] = useState(false);
   const [playing, setPlaying] = useState(false);
@@ -151,7 +158,6 @@ export function VideoCard({ flick, isActive, isFeedActive }: VideoCardProps) {
     if (!video) return;
 
     if (isActive && isFeedActive !== false) {
-      video.muted = true;
       const p = video.play();
       if (p !== undefined) p.then(() => setPlaying(true)).catch(() => setPlaying(false));
     } else {
@@ -160,6 +166,14 @@ export function VideoCard({ flick, isActive, isFeedActive }: VideoCardProps) {
       setPlaying(false);
       setCommentsOpen(false);
     }
+
+    return () => {
+      const cleanupVideo = videoRef.current;
+      if (cleanupVideo) {
+        cleanupVideo.pause();
+        cleanupVideo.currentTime = 0;
+      }
+    };
   }, [isActive, isFeedActive]);
 
   useEffect(() => {
@@ -259,7 +273,7 @@ export function VideoCard({ flick, isActive, isFeedActive }: VideoCardProps) {
           BlurDataURL: undefined,
         };
         if (typeof window !== "undefined") {
-          window.dispatchEvent(new CustomEvent("swiparr:match", { detail: matchedItem }));
+          window.dispatchEvent(new CustomEvent("fanbiq:match", { detail: matchedItem }));
         }
       }
     } catch (err) {
@@ -278,12 +292,12 @@ export function VideoCard({ flick, isActive, isFeedActive }: VideoCardProps) {
       )}
     >
       {/* ── Video layer ── */}
-      <div className="absolute inset-0 bg-black flex items-center justify-center">
+      <div className="absolute inset-0 bg-black flex items-start justify-center">
         {flick.videoUrl ? (
           <video
             ref={videoRef}
             src={flick.videoUrl}
-            className="block max-h-full max-w-full h-auto w-auto object-contain"
+            className="w-full h-full object-cover"
             loop
             playsInline
             preload="auto"
@@ -293,7 +307,7 @@ export function VideoCard({ flick, isActive, isFeedActive }: VideoCardProps) {
           <img
             src={flick.posterUrl}
             alt={flick.movieTitle}
-            className="max-h-full max-w-full h-auto w-auto object-contain"
+            className="w-full h-full object-cover"
           />
         ) : (
           <div className="h-full w-full bg-gradient-to-br from-[#1a0520] via-[#0a1a08] to-[#050508]" />
@@ -322,164 +336,7 @@ export function VideoCard({ flick, isActive, isFeedActive }: VideoCardProps) {
         </div>
       </div>
 
-      {/* ─────────────────────────────────────────────────────────────────────
-          Right action rail
-      ───────────────────────────────────────────────────────────────────── */}
-      <div className="absolute right-3 bottom-32 flex flex-col items-center gap-5 z-30">
-
-        {/* Like */}
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            setLiked((v) => !v);
-            setLikeCount((c) => (liked ? c - 1 : c + 1));
-          }}
-          className="flex flex-col items-center gap-1"
-          aria-label={liked ? "Unlike" : "Like"}
-        >
-          <Heart
-            className={cn(
-              "size-7 transition-all",
-              iconClass,
-              liked ? "text-red-400 fill-red-400 scale-110" : "text-white"
-            )}
-          />
-          <span className="text-white/80 text-[11px] font-medium drop-shadow-sm">
-            {formatCount(likeCount)}
-          </span>
-        </button>
-
-        {/* Comments */}
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            setCommentsActive((v) => !v);
-            setCommentsOpen(true);
-          }}
-          className="flex flex-col items-center gap-1"
-          aria-label="Comments"
-        >
-          <MessageCircle
-            className={cn(
-              "size-7 transition-colors",
-              iconClass,
-              commentsActive ? "text-white" : "text-white"
-            )}
-          />
-          <span className="text-white/80 text-[11px] font-medium drop-shadow-sm">
-            {formatCount(flick.comments)}
-          </span>
-        </button>
-
-        {/* Share */}
-        <button
-          onClick={(e) => e.stopPropagation()}
-          className="flex flex-col items-center gap-1"
-          aria-label="Share"
-        >
-          <Share2 className={cn("size-7 text-white", iconClass)} />
-          <span className="text-white/80 text-[11px] font-medium drop-shadow-sm">Share</span>
-        </button>
-
-        {/* Save */}
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            setSaved((v) => !v);
-          }}
-          className="flex flex-col items-center gap-1"
-          aria-label={saved ? "Unsave" : "Save"}
-        >
-          <Bookmark
-            className={cn(
-              "size-7 transition-all",
-              iconClass,
-              saved ? "text-white fill-white" : "text-white"
-            )}
-          />
-          <span className="text-white/80 text-[11px] font-medium drop-shadow-sm">
-            {saved ? "Saved" : "Save"}
-          </span>
-        </button>
-
-        {/* ── Movie poster + details button with separate like toggle ────────────────────────────────── */}
-        <div
-          role="button"
-          tabIndex={0}
-          onClick={(e) => {
-            e.stopPropagation();
-            handleOpenMovie();
-          }}
-          onKeyDown={(e) => {
-            if (e.key === "Enter" || e.key === " ") {
-              e.preventDefault();
-              e.stopPropagation();
-              handleOpenMovie();
-            }
-          }}
-          className="flex flex-col items-center gap-0 mt-1 cursor-pointer focus:outline-none focus:ring-2 focus:ring-white/60"
-          aria-label="Open movie details"
-        >
-          <div className="relative pb-3">
-            <div
-              className={cn(
-                "w-10 h-10 rounded-lg overflow-hidden border transition-all duration-300",
-                inWatchlist
-                  ? "border-white/60 shadow-[0_0_14px_rgba(255,255,255,0.2)]"
-                  : "border-white/10"
-              )}
-            >
-              {flick.movieBackdropUrl ? (
-                <img
-                  src={flick.movieBackdropUrl}
-                  alt={flick.movieTitle}
-                  className="w-full h-full object-cover"
-                />
-              ) : flick.moviePosterUrl ? (
-                <img
-                  src={flick.moviePosterUrl}
-                  alt={flick.movieTitle}
-                  className="w-full h-full object-cover"
-                />
-              ) : (
-                <div className="w-full h-full bg-gradient-to-br from-white/10 to-white/[0.03]" />
-              )}
-            </div>
-
-            <div className="absolute bottom-0 left-1/2 -translate-x-1/2 z-10">
-              <button
-                type="button"
-                onClick={(e) => {
-                  setInWatchlist((v) => !v);
-                  handleAddToLikes(e);
-                }}
-                className={cn(
-                  "w-[22px] h-[22px] rounded-full flex items-center justify-center border-[1.5px] transition-all duration-200 shadow-sm",
-                  inWatchlist ? "bg-black/60 border-white/50" : "bg-white border-white"
-                )}
-                aria-label={inWatchlist ? "Remove from list" : "Add movie to like list"}
-              >
-                {inWatchlist ? (
-                  <Check
-                    strokeWidth={3.5}
-                    className="size-3 text-white transition-all duration-200"
-                  />
-                ) : (
-                  <Plus
-                    strokeWidth={3.5}
-                    className="size-3 text-black transition-all duration-200"
-                  />
-                )}
-              </button>
-            </div>
-          </div>
-
-          <span className="text-white/70 text-[10px] font-medium drop-shadow-sm">
-            Movie
-          </span>
-        </div>
-
-      </div>
+      {/* Right action rail removed per redesign: actions (like/comments/share/save) are hidden */}
 
 
 
@@ -488,7 +345,7 @@ export function VideoCard({ flick, isActive, isFeedActive }: VideoCardProps) {
           pb-12 doubles the original pb-6 breathing room below the text block.
           bottom value raised from 72px to account for the taller offset.
       ───────────────────────────────────────────────────────────────────── */}
-      <div className="absolute bottom-[81px] left-0 right-[72px] px-4 pb-14 z-30">
+      <div className="absolute bottom-[110px] left-0 right-0 px-4 pb-20 z-30">
         <div className="flex items-center gap-1 mb-2.5">
           <Avatar className="size-7 shrink-0 border border-white/25">
             <AvatarImage src={flick.uploaderAvatarUrl} alt={flick.uploader} className="object-cover" />
@@ -500,25 +357,48 @@ export function VideoCard({ flick, isActive, isFeedActive }: VideoCardProps) {
             @{flick.uploader}
           </span>
 
-          {/* Follow button — white pill, no lime */}
-          {!followed ? (
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                setFollowed(true);
-              }}
-              className="shrink-0 ml-2 rounded-full px-3 py-1 text-[11px] font-semibold bg-white text-black transition-opacity active:opacity-70"
-            >
-              + Follow
-            </button>
-          ) : (
-            <span className="shrink-0 ml-2 rounded-full px-3 py-1 text-[11px] font-medium bg-white/10 border border-white/18 text-white/55">
-              Following
-            </span>
+          {!hideProfileButton && (
+            profileButtonAction ? (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  profileButtonAction.onClick(e);
+                }}
+                className="shrink-0 ml-2 rounded-full px-3 py-1 text-[11px] font-semibold bg-white text-black transition-opacity active:opacity-70"
+              >
+                {profileButtonAction.label}
+              </button>
+            ) : !followed ? (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setFollowed(true);
+                }}
+                className="shrink-0 ml-2 rounded-full px-3 py-1 text-[11px] font-semibold bg-white text-black transition-opacity active:opacity-70"
+              >
+                + Follow
+              </button>
+            ) : (
+              <span className="shrink-0 ml-2 rounded-full px-3 py-1 text-[11px] font-medium bg-white/10 border border-white/18 text-white/55">
+                Following
+              </span>
+            )
           )}
         </div>
+        {onDelete && (
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onDelete(flick.id);
+            }}
+            className="absolute top-3 right-3 z-40 rounded-full bg-black/60 p-2 text-white transition hover:bg-black"
+            aria-label="Delete flick"
+          >
+            <Trash2 className="size-4" />
+          </button>
+        )}
 
-        <p className="text-white/88 text-[12.5px] leading-snug line-clamp-2 drop-shadow">
+        <p className="text-white/88 text-[13px] leading-snug line-clamp-3 drop-shadow mt-1">
           {flick.caption}
         </p>
       </div>

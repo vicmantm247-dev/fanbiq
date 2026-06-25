@@ -143,7 +143,7 @@ export function useMovieActions<T extends MediaItem>(initialMovie: T | null, opt
     });
   };
 
-  const { mutateAsync: relike } = useMutation({
+  const { mutateAsync: relike, isPending: isReliking } = useMutation({
     mutationFn: async (params?: { movie: T; sessionCode: string | null }) => {
       const movie = params?.movie || currentMovie;
       const code = params?.sessionCode ?? movieSessionCode;
@@ -293,6 +293,21 @@ export function useMovieActions<T extends MediaItem>(initialMovie: T | null, opt
     });
   };
 
+  const handleLike = (e?: React.MouseEvent) => {
+    e?.stopPropagation();
+    if (!currentMovie) return;
+
+    toast.promise(relike(undefined), {
+      loading: "Adding to likes...",
+      success: "Movie added to like list",
+      error: (err) => ({
+        message: "Failed to add to likes",
+        description: getErrorMessage(err)
+      }),
+      position: 'top-right'
+    });
+  };
+
   return {
     movie: currentMovie,
     isInList,
@@ -301,8 +316,10 @@ export function useMovieActions<T extends MediaItem>(initialMovie: T | null, opt
     isUnliking,
     handleToggleWatchlist,
     handleUnlike,
+    handleLike,
     relike,
     useWatchlist,
-    isGuest
+    isGuest,
+    isReliking
   };
 }

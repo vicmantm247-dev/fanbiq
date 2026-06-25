@@ -15,6 +15,9 @@ const nextConfig: NextConfig = {
   cacheComponents: true,
   output: "standalone",
   assetPrefix: BASE_PATH || undefined,
+  experimental: {
+    proxyClientMaxBodySize: '100mb',
+  },
   async headers() {
     return [
       {

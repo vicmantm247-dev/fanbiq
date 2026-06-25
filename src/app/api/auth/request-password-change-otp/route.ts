@@ -41,7 +41,7 @@ export async function POST(request: NextRequest) {
     });
 
     // Send email
-    await sendVerificationEmail(email, otp);
+    await sendVerificationEmail(email, user.username || email, otp);
 
     logger.info(`Password change OTP sent to ${email}`);
 

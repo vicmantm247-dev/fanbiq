@@ -142,6 +142,8 @@ export async function POST(request: NextRequest) {
       videoUrl = `/uploads/flicks/${filename}`;
     }
 
+    const uploaderName = session?.user?.Name || 'anonymous';
+
     const [saved] = await db.insert(flicks).values({
       videoPath: filename,
       videoUrl,
@@ -150,15 +152,35 @@ export async function POST(request: NextRequest) {
       tmdbId: tmdbId ? parseInt(tmdbId, 10) : null,
       moviePosterUrl: moviePosterUrl || '',
       movieBackdropUrl: movieBackdropUrl || '',
-      uploader: 'anonymous',
+      uploader: uploaderName,
       caption: description || '',
       tags: parsedTags,
     }).returning();
 
-    logger.info(`Video upload saved: ${title} by ${session.user.Name}`);
+    logger.info(`Video upload saved: ${title} by ${uploaderName}`);
+
+    const responseFlick = {
+      id: saved.id,
+      videoPath: saved.videoPath,
+      videoUrl: saved.videoUrl,
+      movieTitle: saved.movieTitle,
+      movieYear: saved.movieYear,
+      tmdbId: saved.tmdbId,
+      moviePosterUrl: saved.moviePosterUrl,
+      movieBackdropUrl: saved.movieBackdropUrl,
+      uploader: saved.uploader,
+      caption: saved.caption,
+      tags: saved.tags,
+      likes: saved.likes,
+      comments: saved.comments,
+      views: saved.views,
+      createdAt: saved.createdAt && typeof (saved.createdAt as any).toISOString === 'function'
+        ? (saved.createdAt as any).toISOString()
+        : String(saved.createdAt),
+    };
 
     return NextResponse.json(
-      { success: true, flick: saved },
+      { success: true, flick: responseFlick },
       { status: 201 }
     );
   } catch (error) {

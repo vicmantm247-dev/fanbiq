@@ -28,14 +28,14 @@ export async function saveProfilePicture(userId: string, imageBuffer: Buffer, co
         .webp({ quality: 80 })
         .toBuffer();
 
-    const updatedAt = new Date().toISOString();
+    const updatedAt = new Date();
     const cloudinaryEnabled = Boolean(
         config.cloudinary.cloudName &&
         config.cloudinary.apiKey &&
         config.cloudinary.apiSecret
     );
 
-    let imageValue: string | Buffer = processedImage;
+    let imageValue: string = processedImage.toString('base64');
 
     if (cloudinaryEnabled) {
         const { cloudName, apiKey, apiSecret } = config.cloudinary;

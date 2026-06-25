@@ -3,7 +3,7 @@
 import React from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Play, Clock, Star, HeartOff, Bookmark, ShieldCheck, ExternalLink, Percent } from "lucide-react";
+import { Play, Clock, Star, Heart, HeartOff, Bookmark, ShieldCheck, ExternalLink, Percent } from "lucide-react";
 import { UserAvatarList } from "../session/UserAvatarList";
 import { useQuery } from "@tanstack/react-query";
 import { MediaItem, WatchProvider } from "@/types";
@@ -63,8 +63,10 @@ export function MovieDetailView({ movieId, onClose, showLikedBy = true, sessionC
     isUnliking,
     handleToggleWatchlist,
     handleUnlike,
+    handleLike,
     useWatchlist,
-    isGuest
+    isGuest,
+    isReliking
   } = useMovieActions(movie || null, {
     onUnlikeSuccess: onClose,
     sessionCode,
@@ -246,6 +248,20 @@ export function MovieDetailView({ movieId, onClose, showLikedBy = true, sessionC
                         : <Star className={cn("w-4 h-4 mr-2", isInList && "fill-foreground")} />
                       }
                       {useWatchlist ? "Watchlist" : "Favorite"}
+                    </Button>
+                  )}
+                  {!isGuest && capabilities.hasAuth && !useWatchlist && !isLikedByMe && (
+                    <Button
+                      className="w-12"
+                      size="lg"
+                      variant="secondary"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleLike();
+                      }}
+                      disabled={isReliking}
+                    >
+                      <Heart className="w-4 h-4" />
                     </Button>
                   )}
                   {isLikedByMe && <Button

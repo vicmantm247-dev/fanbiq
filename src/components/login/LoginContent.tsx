@@ -319,7 +319,7 @@ export default function LoginContent() {
                   <TabsList className="grid w-full grid-cols-5 h-9">
                     <TabsTrigger value={ProviderType.NATIVE} className="text-xs font-semibold">
                       <User className="size-3" />
-                      Swiparr
+                      fanbIQ
                     </TabsTrigger>
                     <TabsTrigger value={ProviderType.JELLYFIN} className="text-xs font-semibold">
                       <SiJellyfin />

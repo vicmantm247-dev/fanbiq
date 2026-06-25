@@ -1,6 +1,6 @@
 import React from "react";
 import { Button } from "@/components/ui/button";
-import { Heart, X, Rewind, SlidersHorizontal } from "lucide-react";
+import { Heart, HeartOff, X, Rewind, SlidersHorizontal } from "lucide-react";
 import { Badge } from "../ui/badge";
 import { cn } from "@/lib/utils";
 
@@ -8,8 +8,12 @@ interface DeckControlsProps {
   onRewind: () => void;
   onSwipeLeft: () => void;
   onSwipeRight: () => void;
+  onToggleLike: () => void;
   onOpenFilter: () => void;
   canRewind: boolean;
+  isLiked: boolean;
+  rewindImageUrl?: string;
+  rewindAriaLabel?: string;
   hasAppliedFilters: boolean;
   leftSwipesRemaining?: number;
   rightSwipesRemaining?: number;
@@ -19,8 +23,12 @@ export function DeckControls({
   onRewind,
   onSwipeLeft,
   onSwipeRight,
+  onToggleLike,
   onOpenFilter,
   canRewind,
+  isLiked,
+  rewindImageUrl,
+  rewindAriaLabel,
   hasAppliedFilters,
   leftSwipesRemaining,
   rightSwipesRemaining,
@@ -34,11 +42,23 @@ export function DeckControls({
       <Button
         size="icon"
         variant="secondary"
-        className="h-12 w-12 rounded-full bg-background/50 border-2"
+        className="h-12 w-12 rounded-full bg-background/50 border-2 overflow-hidden relative"
         onClick={onRewind}
         disabled={!canRewind}
+        aria-label={rewindAriaLabel ?? "Open movie details"}
       >
-        <Rewind className="size-5.5" />
+        {rewindImageUrl ? (
+          <>
+            <img
+              src={rewindImageUrl}
+              alt={rewindAriaLabel ?? "Movie backdrop"}
+              className="h-full w-full object-cover"
+            />
+            <span className="absolute inset-0 bg-black/30" aria-hidden="true" />
+          </>
+        ) : (
+          <Rewind className="size-5.5" />
+        )}
       </Button>
       <Button
         size="icon"
@@ -57,10 +77,14 @@ export function DeckControls({
       <Button
         size="icon"
         className="h-18 w-18 rounded-full relative"
-        onClick={onSwipeRight}
-        disabled={isRightSwipeDisabled}
+        onClick={isLiked ? onToggleLike : onSwipeRight}
+        disabled={!isLiked && isRightSwipeDisabled}
       >
-        <Heart className="size-9 fill-primary-foreground" />
+        {isLiked ? (
+          <HeartOff className="size-9" />
+        ) : (
+          <Heart className="size-9 fill-primary-foreground" />
+        )}
         {rightSwipesRemaining !== undefined && (
           <Badge variant='secondary' className="rounded-full absolute -top-2 -right-2">
             {rightSwipesRemaining}

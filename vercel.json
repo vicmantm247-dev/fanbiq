@@ -2,7 +2,7 @@
   "version": 2,
   "builds": [{ "src": "package.json", "use": "@vercel/next" }],
   "functions": {
-    "api/**": {
+    "src/app/api/**/route.ts": {
       "memory": 1024,
       "maxDuration": 60
     }

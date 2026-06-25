@@ -309,6 +309,13 @@ export function CardDeck() {
   const leftSwipesRemaining = sessionSettings?.maxLeftSwipes ? Math.max(0, sessionSettings.maxLeftSwipes - (stats?.mySwipes.left || 0)) : undefined;
   const rightSwipesRemaining = sessionSettings?.maxRightSwipes ? Math.max(0, sessionSettings.maxRightSwipes - (stats?.mySwipes.right || 0)) : undefined;
 
+  const currentItem = activeDeck[0];
+  const isLiked = Boolean(currentItem?.UserData?.Likes);
+  const handleToggleLike = () => {
+    if (!currentItem) return;
+    handleSwipeAction("right");
+  };
+
   return (
     <div className="relative flex flex-col items-center w-full h-full">
       {sessionStatus?.code && members && members.length > 0 ? (
@@ -361,8 +368,10 @@ export function CardDeck() {
         onRewind={rewind}
         onSwipeLeft={() => handleSwipeAction("left")}
         onSwipeRight={() => handleSwipeAction("right")}
+        onToggleLike={handleToggleLike}
         onOpenFilter={() => setIsFilterOpen(true)}
         canRewind={!!lastSwipe}
+        isLiked={isLiked}
         hasAppliedFilters={hasAppliedFilters}
         leftSwipesRemaining={leftSwipesRemaining}
         rightSwipesRemaining={rightSwipesRemaining}

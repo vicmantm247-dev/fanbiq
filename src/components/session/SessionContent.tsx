@@ -160,6 +160,13 @@ export default function SessionContent() {
         });
     }, [searchParams, isSuccess, activeCode, router, pathname, joinSession, leaveSession]);
 
+    // Allow other parts of the app to open the session sheet via a window event
+    useEffect(() => {
+        const handler = () => setIsOpen(true);
+        window.addEventListener('fanbiq:open-session', handler as EventListener);
+        return () => window.removeEventListener('fanbiq:open-session', handler as EventListener);
+    }, []);
+
     const handleShare = async () => {
         if (!activeCode) return;
         const { basePath } = getRuntimeConfig();
@@ -172,7 +179,7 @@ export default function SessionContent() {
         }
 
         const shareData = {
-            title: 'Swiparr session invite',
+            title: 'fanbIQ session invite',
             text: `Join with code: ${activeCode}`,
             url: shareUrl
         };

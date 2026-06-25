@@ -8,6 +8,7 @@ import { Analytics } from "@vercel/analytics/next"
 import { config as appConfig } from "@/lib/config";
 import { Suspense } from 'react';
 import { RuntimeConfigScript } from '@/components/RuntimeConfigScript';
+import { RouteVideoPauseHandler } from '@/components/RouteVideoPauseHandler';
 
 const sansFlex = Zalando_Sans({
   subsets: ['latin'],
@@ -43,27 +44,27 @@ export async function generateMetadata(): Promise<Metadata> {
   return {
     metadataBase: new URL(url),
     title: {
-      default: "Swiparr",
-      template: "%s | Swiparr"
+      default: "fanbIQ",
+      template: "%s | fanbIQ"
     },
     description: tagline,
-    appleWebApp: { capable: true, title: "Swiparr", statusBarStyle: "black-translucent" },
+    appleWebApp: { capable: true, title: "fanbIQ", statusBarStyle: "black-translucent" },
     icons: {
       icon: `${basePath}/favicon.ico`,     
       shortcut: `${basePath}/icon1.png`,   
       apple: `${basePath}/apple-icon.png`,
     },
     openGraph: {
-      title: "Swiparr – Discover what to watch next",
+      title: "fanbIQ – Discover what to watch next",
       description: tagline,
       url: url,
-      siteName: "Swiparr",
+      siteName: "fanbIQ",
       locale: "en_US",
       type: "website",
     },
     twitter: {
       card: "summary_large_image",
-      title: "Swiparr – Discover what to watch next",
+      title: "fanbIQ – Discover what to watch next",
       description: tagline,
     },
   };
@@ -83,6 +84,7 @@ export default async function RootLayout({
         <Suspense>
           <RuntimeConfigScript />
         </Suspense>
+        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
       </head>
       <body className={`${sansFlex.variable} ${jetbrainsMono.variable} overflow-y-hidden`}>
         {useAnalytics && <Analytics/>}
@@ -94,6 +96,7 @@ export default async function RootLayout({
           disableTransitionOnChange
         >
           <TouchProvider>
+            <RouteVideoPauseHandler />
             {children}
           </TouchProvider>
         </Providers>

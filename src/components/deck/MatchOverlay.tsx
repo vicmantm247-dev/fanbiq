@@ -75,7 +75,11 @@ export function MatchOverlay({ item, sessionCode, onClose }: MatchOverlayProps) 
                 {/* Support media items from flicks (external poster URLs) as well as media items backed by our /api/media/image endpoint */}
                 {(() => {
                   const apiImage = item.ImageTags?.Primary ? `/api/media/image/${item.Id}?tag=${item.ImageTags?.Primary}` : `/api/media/image/${item.Id}`;
-                  const fallback = (item as any).PosterUrl || (item as any).moviePosterUrl || (item as any).movieBackdropUrl || null;
+                  const fallback =
+                    (item as any).movieBackdropUrl ||
+                    (item as any).moviePosterUrl ||
+                    (item as any).PosterUrl ||
+                    (item.BackdropImageTags?.[0] ? `/api/media/image/${item.Id}?tag=${item.BackdropImageTags[0]}` : null);
                   const src = fallback || apiImage;
                   return (
                     <OptimizedImage
