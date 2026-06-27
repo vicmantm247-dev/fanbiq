@@ -1,10 +1,9 @@
 'use client';
 
-import { useMemo, useState } from 'react';
-import { Search } from 'lucide-react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { Search, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import {
@@ -21,6 +20,7 @@ import {
   type SearchUserResult,
 } from './SearchResultCards';
 import { MovieListItem } from '@/components/movie/MovieListItem';
+import { SharedTabs } from '@/components/ui/shared-tabs';
 import { useSearchUsers } from '@/hooks/api/use-search-users';
 import { useSearchFlicks } from '@/hooks/api/use-search-flicks';
 import { useSearchTmdb } from '@/hooks/api/use-search-tmdb';
@@ -44,16 +44,18 @@ function mapRemoteUser(user: {
   username: string;
   displayName: string;
   videoCount: number;
+  profileImage?: string | null;
 }): SearchUserResult {
   return {
     id: user.id,
     username: user.username,
     displayName: user.displayName || user.username,
-    bio: `Creator with ${user.videoCount} clip${user.videoCount === 1 ? '' : 's'} in the catalog.`,
+    bio: `Creator in the catalog.`,
     followers: 0,
     videos: user.videoCount,
     avatarInitials: user.username.slice(0, 2).toUpperCase(),
     badges: ['Creator'],
+    profilePicUrl: user.profileImage || undefined,
   };
 }
 
@@ -83,8 +85,43 @@ function FlickMasonryGrid({ flicks }: { flicks: SearchFlickResult[] }) {
   );
 }
 
+const RECENT_SEARCHES_KEY = 'fanbiq.recent-searches';
+const RECENT_SEARCHES_LIMIT = 5;
+
+type RecentSearchEntry = {
+  label: string;
+  category: 'flicks' | 'movies' | 'users';
+};
+
+function readRecentSearches(): RecentSearchEntry[] {
+  if (typeof window === 'undefined') {
+    return [];
+  }
+
+  try {
+    const raw = window.localStorage.getItem(RECENT_SEARCHES_KEY);
+    if (!raw) {
+      return [];
+    }
+
+    const parsed = JSON.parse(raw) as unknown;
+    if (!Array.isArray(parsed)) {
+      return [];
+    }
+
+    return parsed
+      .filter((value): value is RecentSearchEntry => {
+        return Boolean(value) && typeof value === 'object' && typeof (value as RecentSearchEntry).label === 'string' && ['flicks', 'movies', 'users'].includes((value as RecentSearchEntry).category);
+      })
+      .slice(0, RECENT_SEARCHES_LIMIT);
+  } catch {
+    return [];
+  }
+}
+
 export function SearchView() {
   const [query, setQuery] = useState('');
+  const [recentSearches, setRecentSearches] = useState<RecentSearchEntry[]>([]);
   const {
     data: remoteFlicks = [],
     isLoading: isFlicksLoading,
@@ -103,6 +140,66 @@ export function SearchView() {
   const { openMovie } = useMovieDetail();
   const [activeTab, setActiveTab] = useState<'all' | 'flicks' | 'movies' | 'users'>('all');
 
+  useEffect(() => {
+    setRecentSearches(readRecentSearches());
+  }, []);
+
+  const addRecentSearch = useCallback((value: string, category: RecentSearchEntry['category']) => {
+    const normalized = value.trim();
+    if (!normalized) {
+      return;
+    }
+
+    setRecentSearches((current) => {
+      const next = [
+        { label: normalized, category },
+        ...current.filter((entry) => entry.label.toLowerCase() !== normalized.toLowerCase() || entry.category !== category),
+      ].slice(0, RECENT_SEARCHES_LIMIT);
+
+      if (typeof window !== 'undefined') {
+        window.localStorage.setItem(RECENT_SEARCHES_KEY, JSON.stringify(next));
+      }
+
+      return next;
+    });
+  }, []);
+
+  const clearRecentSearches = useCallback(() => {
+    setRecentSearches([]);
+    if (typeof window !== 'undefined') {
+      window.localStorage.removeItem(RECENT_SEARCHES_KEY);
+    }
+  }, []);
+
+  const removeRecentSearch = useCallback((target: RecentSearchEntry) => {
+    setRecentSearches((current) => {
+      const next = current.filter((entry) => entry.label !== target.label || entry.category !== target.category);
+
+      if (typeof window !== 'undefined') {
+        window.localStorage.setItem(RECENT_SEARCHES_KEY, JSON.stringify(next));
+      }
+
+      return next;
+    });
+  }, []);
+
+  const handleSearchSubmit = useCallback((value?: string) => {
+    const nextQuery = (value ?? query).trim();
+    if (!nextQuery) {
+      return;
+    }
+
+    setQuery(nextQuery);
+    setActiveTab('all');
+    addRecentSearch(nextQuery, 'users');
+  }, [addRecentSearch, query]);
+
+  const handleRecentSearchClick = useCallback((entry: RecentSearchEntry) => {
+    setQuery(entry.label);
+    setActiveTab('all');
+    addRecentSearch(entry.label, entry.category);
+  }, [addRecentSearch]);
+
   const filteredMovies = remoteMovies;
   const filteredFlicks = remoteFlicks;
 
@@ -119,7 +216,10 @@ export function SearchView() {
       <div className="mx-auto w-full max-w-6xl px-4 pt-[calc((env(safe-area-inset-top)+20px)*2.5)] pb-4 flex-shrink-0">
         <div className="space-y-2">
           <form
-            onSubmit={(e) => e.preventDefault()}
+            onSubmit={(e) => {
+              e.preventDefault();
+              handleSearchSubmit(query);
+            }}
             className="flex gap-2 items-center"
           >
             <Input
@@ -137,46 +237,80 @@ export function SearchView() {
         </div>
       </div>
 
+      {/* ── Tab Bar ── */}
+      <SharedTabs
+        tabs={[
+          { label: 'All', value: 'all' },
+          { label: 'Flicks', value: 'flicks' },
+          { label: 'Movies/TV', value: 'movies' },
+          { label: 'Users', value: 'users' },
+        ]}
+        activeValue={activeTab}
+        onChange={(value) => setActiveTab(value as 'all' | 'flicks' | 'movies' | 'users')}
+      />
+
       {/* ── Results ── */}
       <ScrollArea className="flex-1 h-[calc(100svh-200px)] w-full">
         <div className="mx-auto max-w-6xl px-4 py-6 pb-20">
           <section className="space-y-4">
-            <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)}>
-              <TabsList className="grid w-full grid-cols-4 gap-2">
-                <TabsTrigger value="all">All</TabsTrigger>
-                <TabsTrigger value="flicks">Flicks</TabsTrigger>
-                <TabsTrigger value="movies">Movies/TV</TabsTrigger>
-                <TabsTrigger value="users">Users</TabsTrigger>
-              </TabsList>
-
-              {/* ALL */}
-              <TabsContent value="all">
+            {/* ALL */}
+            {activeTab === 'all' && (
                 <div className="space-y-6">
                   {showPlaceholder ? (
-                    <Card className="border border-dashed border-border bg-muted p-6">
-                      <CardHeader>
-                        <p className="text-lg font-semibold">Start your search</p>
-                        <p className="text-sm text-muted-foreground">
-                          Type a keyword above to reveal videos, movies, and community creators.
-                        </p>
-                      </CardHeader>
-                      <CardContent className="grid gap-4 sm:grid-cols-2">
-                        <div className="rounded-3xl bg-background/80 p-4">
-                          <h3 className="font-semibold">Try these examples</h3>
-                          <ul className="mt-3 space-y-2 text-sm text-muted-foreground">
-                            <li>• neon thrillers</li>
-                            <li>• user handles</li>
-                            <li>• sci-fi scenes</li>
-                          </ul>
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between gap-2">
+                        <div>
+                          <p className="text-lg font-semibold">Recent searches</p>
                         </div>
-                        <div className="rounded-3xl bg-background/80 p-4">
-                          <h3 className="font-semibold">Result categories</h3>
-                          <p className="mt-2 text-sm text-muted-foreground">
-                            Flick previews, movie results, and creator profiles are grouped into each tab.
-                          </p>
+                        {recentSearches.length > 0 && (
+                          <button
+                            type="button"
+                            onClick={clearRecentSearches}
+                            className="text-sm text-muted-foreground hover:text-foreground"
+                          >
+                            Clear
+                          </button>
+                        )}
+                      </div>
+
+                      {recentSearches.length > 0 ? (
+                        <div className="space-y-2">
+                          {recentSearches.map((item) => (
+                            <div
+                              key={`${item.category}:${item.label}`}
+                              className="flex w-full items-center gap-3 rounded-2xl px-3 py-3 transition-colors hover:bg-muted/60"
+                            >
+                              <button
+                                type="button"
+                                onClick={() => handleRecentSearchClick(item)}
+                                className="flex min-w-0 flex-1 items-center gap-3 text-left"
+                              >
+                                <div className="flex size-10 items-center justify-center rounded-full bg-muted text-sm font-semibold text-foreground">
+                                  {item.label.slice(0, 2).toUpperCase()}
+                                </div>
+                                <div className="min-w-0 flex-1">
+                                  <div className="truncate text-sm font-semibold text-foreground">
+                                    {item.label}
+                                  </div>
+                                </div>
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => removeRecentSearch(item)}
+                                className="ml-auto flex size-8 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-background hover:text-foreground"
+                                aria-label={`Remove ${item.label}`}
+                              >
+                                <X className="size-4" />
+                              </button>
+                            </div>
+                          ))}
                         </div>
-                      </CardContent>
-                    </Card>
+                      ) : (
+                        <div className="rounded-2xl border border-dashed border-border bg-muted/40 p-6 text-center text-sm text-muted-foreground">
+                          Your recent user searches will appear here.
+                        </div>
+                      )}
+                    </div>
                   ) : noResults ? (
                     <div className="rounded-3xl border border-border bg-card p-10 text-center text-muted-foreground">
                       No results matched your search. Try a different keyword.
@@ -273,11 +407,11 @@ export function SearchView() {
                     </div>
                   )}
                 </div>
-              </TabsContent>
+            )}
 
-              {/* FLICKS */}
-              <TabsContent value="flicks">
-                {showPlaceholder ? (
+            {/* FLICKS */}
+            {activeTab === 'flicks' && (
+              showPlaceholder ? (
                   <Card className="border border-dashed border-border bg-card p-10 text-center text-muted-foreground">
                     Search for a scene, creator, or movie to discover flick previews.
                   </Card>
@@ -287,12 +421,12 @@ export function SearchView() {
                   </Card>
                 ) : (
                   <FlickMasonryGrid flicks={filteredFlicks} />
-                )}
-              </TabsContent>
+                )
+            )}
 
-              {/* MOVIES */}
-              <TabsContent value="movies">
-                {showPlaceholder ? (
+            {/* MOVIES */}
+            {activeTab === 'movies' && (
+              showPlaceholder ? (
                   <Card className="border border-dashed border-border bg-card p-10 text-center text-muted-foreground">
                     Search movies and TV shows by title, genre, or synopsis.
                   </Card>
@@ -318,12 +452,12 @@ export function SearchView() {
                       />
                     ))}
                   </div>
-                )}
-              </TabsContent>
+                )
+            )}
 
-              {/* USERS */}
-              <TabsContent value="users">
-                {showPlaceholder ? (
+            {/* USERS */}
+            {activeTab === 'users' && (
+              showPlaceholder ? (
                   <Card className="border border-dashed border-border bg-card p-10 text-center text-muted-foreground">
                     Search creator handles and profiles to connect with users.
                   </Card>
@@ -345,12 +479,13 @@ export function SearchView() {
                       <SearchUserCard key={user.id} user={user} />
                     ))}
                   </div>
-                )}
-              </TabsContent>
-            </Tabs>
+                )
+            )}
           </section>
         </div>
       </ScrollArea>
     </main>
   );
 }
+
+export default SearchView;

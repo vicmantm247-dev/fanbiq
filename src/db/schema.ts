@@ -92,7 +92,23 @@ export const userProfiles = pgTable("UserProfile", {
 });
 
 export type UserProfile = InferSelectModel<typeof userProfiles>;
-export type NewUserProfile = InferInsertModel<typeof userProfiles>;
+ export type NewUserProfile = InferInsertModel<typeof userProfiles>;
+
+export const follows = pgTable("Follow", {
+  id: serial("id").primaryKey(),
+  followerId: text("followerId").notNull().references(() => nativeUsers.id, { onDelete: "cascade" }),
+  followingId: text("followingId").notNull().references(() => nativeUsers.id, { onDelete: "cascade" }),
+  createdAt: timestamp("createdAt").notNull().default(sql`CURRENT_TIMESTAMP`),
+}, (table) => {
+  return [
+    index("Follow_followerId_idx").on(table.followerId),
+    index("Follow_followingId_idx").on(table.followingId),
+    uniqueIndex("Follow_unique_idx").on(table.followerId, table.followingId),
+  ];
+});
+
+export type Follow = InferSelectModel<typeof follows>;
+export type NewFollow = InferInsertModel<typeof follows>;
 
 export const sessionEvents = pgTable("SessionEvent", {
   id: serial("id").primaryKey(),
@@ -117,6 +133,8 @@ export const nativeUsers = pgTable("NativeUser", {
   email: text("email").notNull(),
   username: text("username").notNull(),
   passwordHash: text("passwordHash").notNull(),
+  displayName: text("displayName"),
+  bio: text("bio"),
   isVerified: boolean("isVerified").notNull().default(false),
   createdAt: timestamp("createdAt").notNull().default(sql`CURRENT_TIMESTAMP`),
   updatedAt: timestamp("updatedAt").notNull().default(sql`CURRENT_TIMESTAMP`),
@@ -127,6 +145,27 @@ export const nativeUsers = pgTable("NativeUser", {
 
 export type NativeUser = InferSelectModel<typeof nativeUsers>;
 export type NewNativeUser = InferInsertModel<typeof nativeUsers>;
+
+export const notifications = pgTable("Notification", {
+  id: serial("id").primaryKey(),
+  recipientId: text("recipientId").notNull().references(() => nativeUsers.id, { onDelete: "cascade" }),
+  actorId: text("actorId").references(() => nativeUsers.id, { onDelete: "cascade" }),
+  actorName: text("actorName"),
+  type: text("type").notNull(),
+  message: text("message").notNull(),
+  sessionCode: text("sessionCode"),
+  relatedId: text("relatedId"),
+  read: boolean("read").notNull().default(false),
+  createdAt: timestamp("createdAt").notNull().default(sql`CURRENT_TIMESTAMP`),
+  readAt: timestamp("readAt"),
+}, (table) => {
+  return [
+    index("Notification_recipientId_createdAt_idx").on(table.recipientId, table.createdAt),
+  ];
+});
+
+export type Notification = InferSelectModel<typeof notifications>;
+export type NewNotification = InferInsertModel<typeof notifications>;
 
 export const verificationTokens = pgTable("VerificationToken", {
   id: serial("id").primaryKey(),

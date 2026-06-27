@@ -1,11 +1,16 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from "react";
-import { ArrowLeft, Search, MoreVertical, Edit2, Share2, Heart, Scissors } from "lucide-react";
+import { useState, useCallback } from "react";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
+import { ArrowLeft, Search, MoreVertical, Edit2, Share2, Loader2, BadgeCheck } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { cn } from "@/lib/utils";
+import { toast } from "sonner";
+import { apiClient } from "@/lib/api-client";
+import { FlickPreviewCard } from "@/components/flicks/FlickPreviewCard";
+import { SharedTabs } from "@/components/ui/shared-tabs";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -29,7 +34,6 @@ interface UserProfilePageProps {
   displayName: string;
   avatarUrl?: string;
   isOwner: boolean;
-  totalUploads: number;
   initialFlicks: UserFlick[];
   // Optional extended stats (can be wired from API later)
   followingCount?: number;
@@ -37,6 +41,7 @@ interface UserProfilePageProps {
   likesCount?: number;
   bio?: string;
   isFollowing?: boolean;
+  isVerified?: boolean;
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -58,45 +63,6 @@ function StatItem({ num, label }: { num: number; label: string }) {
   );
 }
 
-function TabItem({
-  label,
-  active,
-  onClick,
-}: {
-  label: string;
-  active: boolean;
-  onClick: () => void;
-}) {
-  return (
-    <div
-      onClick={onClick}
-      style={{
-        flex: 1,
-        textAlign: "center",
-        fontSize: 13,
-        fontWeight: 600,
-        color: active ? "#111" : "#aaa",
-        padding: "11px 0 10px",
-        cursor: "pointer",
-        position: "relative",
-        transition: "color 0.2s",
-        userSelect: "none",
-      }}
-    >
-      {label}
-      {active && (
-        <div style={{
-          position: "absolute",
-          bottom: -1, left: "15%", right: "15%",
-          height: 2,
-          background: "#111",
-          borderRadius: "2px 2px 0 0",
-        }} />
-      )}
-    </div>
-  );
-}
-
 // ─── FlickCard ────────────────────────────────────────────────────────────────
 
 interface FlickCardProps {
@@ -105,70 +71,21 @@ interface FlickCardProps {
 }
 
 function FlickCard({ flick, index }: FlickCardProps) {
-  const videoRef = useRef<HTMLVideoElement>(null);
-
-  // IntersectionObserver: autoplay when ≥30% visible
-  useEffect(() => {
-    const video = videoRef.current;
-    if (!video) return;
-
-    const obs = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.intersectionRatio >= 0.3) {
-          if (!video.src) { 
-            video.src = flick.videoUrl; 
-            video.load(); 
-          }
-          video.play().catch(() => {});
-        } else {
-          video.pause();
-        }
-      },
-      { threshold: [0, 0.1, 0.3, 0.5, 1.0] }
-    );
-    obs.observe(video);
-    return () => obs.disconnect();
-  }, [flick.videoUrl]);
-
-  const delay = `${0.04 + index * 0.06}s`;
-
   return (
-    <div className="break-inside-avoid mb-1.5 cursor-pointer relative group" style={{ animation: "fadeUp 0.4s ease both", animationDelay: delay }}>
-      {/* Card image wrap */}
-      <div className="rounded-lg overflow-hidden relative bg-background">
-        <video
-          ref={videoRef}
-          muted
-          loop
-          playsInline
-          preload="none"
-          poster={flick.posterUrl}
-          className="w-full block object-cover"
-        />
-
-        {/* Scissors + likes badge — bottom left */}
-        <div className="absolute bottom-2 left-2 flex items-center gap-1 bg-black/50 rounded-full px-2 py-0.5">
-          <Scissors className="w-3 h-3 text-white" />
-          <span className="text-xs font-semibold text-white">
-            {formatCount(flick.likes)}
-          </span>
-        </div>
-
-        {/* Star badge — top right (first card) */}
-        {index === 0 && (
-          <div className="absolute top-2 right-2 w-7 h-7 bg-black/35 rounded-full flex items-center justify-center">
-            <Heart className="w-3 h-3 text-white" />
-          </div>
-        )}
-      </div>
-
-      {/* Title label */}
-      <div className="px-1 py-1">
-        <div className="text-xs text-foreground leading-relaxed">
-          {flick.movieTitle} {flick.movieYear ? `(${flick.movieYear})` : ""}
-        </div>
-      </div>
-    </div>
+    <FlickPreviewCard
+      flick={{
+        id: flick.id,
+        movieTitle: flick.movieTitle,
+        movieYear: flick.movieYear,
+        videoUrl: flick.videoUrl,
+        posterUrl: flick.posterUrl,
+        caption: flick.caption,
+        uploader: flick.uploader,
+        likes: flick.likes,
+      }}
+      index={index}
+      animationDelay={40 + index * 60}
+    />
   );
 }
 
@@ -181,27 +98,49 @@ export default function UserProfilePage({
   displayName,
   avatarUrl,
   isOwner,
-  totalUploads,
   initialFlicks,
-  followingCount = 18,
+  followingCount = 0,
   followersCount = 0,
   likesCount = 0,
   bio,
   isFollowing = false,
+  isVerified = false,
 }: UserProfilePageProps) {
+  const router = useRouter();
   const [activeTab, setActiveTab] = useState<"flicks" | "liked">("flicks");
   const [following, setFollowing] = useState(isFollowing);
+  const [followLoading, setFollowLoading] = useState(false);
+  const [flicksLoading, setFlicksLoading] = useState(false);
+  const [followersNum, setFollowersNum] = useState<number>(followersCount ?? 0);
+  const [followingNum, setFollowingNum] = useState<number>(followingCount ?? 0);
 
   const visibleFlicks = activeTab === "flicks" ? initialFlicks : [...initialFlicks].reverse();
 
-  // Compute aggregate likes
-  const totalLikes = likesCount || initialFlicks.reduce((acc, f) => acc + f.likes, 0);
-  const totalFollowers = followersCount || totalUploads * 3;
+  // Use real data from database
+  const totalLikes = likesCount ?? initialFlicks.reduce((acc, f) => acc + f.likes, 0);
+  const totalFollowers = followersCount ?? 0;
 
-  const handleFollow = useCallback(() => {
+  const handleFollow = useCallback(async () => {
     if (isOwner) return;
-    setFollowing((f) => !f);
-  }, [isOwner]);
+    
+    setFollowLoading(true);
+    try {
+      if (following) {
+        await apiClient.delete(`/api/user/${username}/follow`);
+        toast.success("Unfollowed");
+        setFollowersNum((n) => Math.max(0, n - 1));
+      } else {
+        await apiClient.post(`/api/user/${username}/follow`);
+        toast.success("Followed");
+        setFollowersNum((n) => n + 1);
+      }
+      setFollowing(!following);
+    } catch (error) {
+      toast.error(following ? "Failed to unfollow" : "Failed to follow");
+    } finally {
+      setFollowLoading(false);
+    }
+  }, [isOwner, username, following]);
 
   return (
     <>
@@ -212,9 +151,9 @@ export default function UserProfilePage({
         }
       `}</style>
 
-      <div className="min-h-screen bg-background">
+      <div className="h-screen overflow-y-auto bg-background overscroll-contain">
         {/* Top Nav */}
-        <div className="flex items-center justify-between px-4 py-2 bg-background border-b">
+        <div className="flex items-center justify-between px-4 py-2 bg-background">
           <Button variant="ghost" size="icon">
             <ArrowLeft className="w-5 h-5" />
           </Button>
@@ -248,9 +187,15 @@ export default function UserProfilePage({
             <div className="flex-1">
               <div className="flex items-center gap-2 mb-1">
                 <h1 className="text-lg font-extrabold">{displayName}</h1>
-                <Badge variant="outline" className="text-xs px-2 py-0.5">
-                  {isOwner ? "You" : "Pro"}
-                </Badge>
+                {isVerified ? (
+                  <div title="Verified">
+                    <BadgeCheck className="w-5 h-5 text-blue-500 flex-shrink-0" />
+                  </div>
+                ) : (
+                  <Badge variant="outline" className="text-xs px-2 py-0.5">
+                    {isOwner ? "You" : "Pro"}
+                  </Badge>
+                )}
               </div>
               <p className="text-sm text-muted-foreground">ID:{username}</p>
             </div>
@@ -258,10 +203,9 @@ export default function UserProfilePage({
 
           {/* Stats */}
           <div className="flex gap-4 py-2 mb-2">
-            <StatItem num={followingCount} label="Following" />
-            <StatItem num={totalFollowers} label="Followers" />
+            <StatItem num={followingNum} label="Following" />
+            <StatItem num={followersNum} label="Followers" />
             <StatItem num={totalLikes} label="Likes" />
-            <StatItem num={totalUploads} label="Flicks" />
           </div>
 
           {/* Bio */}
@@ -281,10 +225,12 @@ export default function UserProfilePage({
           <div className="flex items-center gap-2 py-3 mb-2">
             {isOwner ? (
               <>
-                <Button variant="outline" className="flex-1">
-                  <Edit2 className="w-4 h-4" />
-                  Edit profile
-                </Button>
+                <Link href="/profile/edit" className="flex-1">
+                  <Button variant="outline" className="w-full">
+                    <Edit2 className="w-4 h-4" />
+                    Edit profile
+                  </Button>
+                </Link>
                 <Button variant="outline" size="icon">
                   <Share2 className="w-4 h-4" />
                 </Button>
@@ -293,10 +239,19 @@ export default function UserProfilePage({
               <>
                 <Button
                   onClick={handleFollow}
+                  disabled={followLoading}
                   variant={following ? "outline" : "default"}
                   className="flex-1"
                 >
-                  {following ? "Following" : "Follow"}
+                  {followLoading ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    </>
+                  ) : following ? (
+                    "Following"
+                  ) : (
+                    "Follow"
+                  )}
                 </Button>
                 <Button variant="outline" size="icon">
                   <Share2 className="w-4 h-4" />
@@ -307,29 +262,29 @@ export default function UserProfilePage({
         </div>
 
         {/* ── Tab Bar ── */}
-        <div style={{
-          display: "flex",
-          alignItems: "center",
-          background: "#fff",
-          borderBottom: "1px solid rgba(0,0,0,0.08)",
-          position: "sticky",
-          top: 0,
-          zIndex: 50,
-        }}>
-          <TabItem
-            label="Flicks"
-            active={activeTab === "flicks"}
-            onClick={() => setActiveTab("flicks")}
-          />
-          <TabItem
-            label="Liked"
-            active={activeTab === "liked"}
-            onClick={() => setActiveTab("liked")}
-          />
-        </div>
+        <SharedTabs
+          tabs={[
+            { label: "Flicks", value: "flicks" },
+            { label: "Liked", value: "liked" },
+          ]}
+          activeValue={activeTab}
+          onChange={(value) => setActiveTab(value as "flicks" | "liked")}
+        />
 
         {/* Masonry Grid */}
-        {visibleFlicks.length === 0 ? (
+        <div className="relative">
+          <div className="pointer-events-none fixed inset-x-0 bottom-0 h-8 z-20 bg-gradient-to-t from-background via-background/60 to-transparent" />
+          {flicksLoading ? (
+          <div className="px-1.5 py-2 pb-16 bg-background" style={{ columnCount: 2, columnGap: 6 }}>
+            {Array.from({ length: 4 }).map((_, i) => (
+              <div
+                key={i}
+                className="break-inside-avoid mb-1.5 bg-muted rounded-lg aspect-video animate-pulse"
+                style={{ animation: "fadeUp 0.4s ease both", animationDelay: `${0.04 + i * 0.06}s` }}
+              />
+            ))}
+          </div>
+        ) : visibleFlicks.length === 0 ? (
           <EmptyState isOwner={isOwner} username={username} />
         ) : (
           <div className="px-1.5 py-2 pb-16 bg-background" style={{ columnCount: 2, columnGap: 6 }}>
@@ -338,6 +293,7 @@ export default function UserProfilePage({
             ))}
           </div>
         )}
+        </div>
       </div>
     </>
   );

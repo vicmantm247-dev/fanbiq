@@ -1,6 +1,6 @@
 import './globals.css'
 import type { Metadata, Viewport } from 'next'
-import { JetBrains_Mono, Zalando_Sans } from 'next/font/google'
+import { Inter, Poppins } from 'next/font/google'
 import { Providers } from '@/components/providers'
 import { getAsyncRuntimeConfig } from '@/lib/server/runtime-config'
 import { TouchProvider } from '@/components/ui/hybrid-tooltip'
@@ -11,18 +11,22 @@ import { RuntimeConfigScript } from '@/components/RuntimeConfigScript';
 import { RouteVideoPauseHandler } from '@/components/RouteVideoPauseHandler';
 import { SessionManager } from '@/components/session/SessionManager';
 
-const sansFlex = Zalando_Sans({
+const inter = Inter({
   subsets: ['latin'],
   display: 'swap',
   variable: '--font-sans',
+  weight: ['300', '400', '500', '600', '700', '800', '900'],
   adjustFontFallback: true,
-  fallback: ["Arial", "Times New Roman"],
+  fallback: ["Arial", "sans-serif"],
 })
 
-const jetbrainsMono = JetBrains_Mono({
+const poppins = Poppins({
   subsets: ['latin'],
   display: 'swap',
-  variable: '--font-mono',
+  variable: '--font-poppins',
+  weight: ['300', '400', '500', '600', '700', '800'],
+  adjustFontFallback: true,
+  fallback: ["sans-serif"],
 })
 
 export const viewport: Viewport = {
@@ -87,7 +91,7 @@ export default async function RootLayout({
         </Suspense>
         <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
       </head>
-      <body className={`${sansFlex.variable} ${jetbrainsMono.variable} overflow-y-hidden`}>
+      <body className={`${inter.variable} ${poppins.variable} overflow-y-hidden`}>
         {useAnalytics && <Analytics/>}
 
         <Providers

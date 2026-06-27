@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db, nativeUsers, flicksVideos } from "@/lib/db";
+import { db, nativeUsers, flicksVideos, userProfiles } from "@/lib/db";
 import { eq, sql } from "drizzle-orm";
 import { logger } from "@/lib/logger";
 import { getErrorMessage } from "@/lib/utils";
@@ -22,14 +22,16 @@ export async function GET(request: NextRequest) {
         email: nativeUsers.email,
         createdAt: nativeUsers.createdAt,
         videoCount: sql<number>`COUNT(${flicksVideos.id})`,
+        profileImage: userProfiles.image,
       })
       .from(nativeUsers)
       .leftJoin(flicksVideos, eq(nativeUsers.id, flicksVideos.uploaderId))
+      .leftJoin(userProfiles, eq(nativeUsers.id, userProfiles.userId))
       .where(sql`
         ${nativeUsers.username} ILIKE ${likeTerm}
         OR ${nativeUsers.email} ILIKE ${likeTerm}
       `)
-      .groupBy(nativeUsers.id, nativeUsers.username, nativeUsers.email, nativeUsers.createdAt)
+      .groupBy(nativeUsers.id, nativeUsers.username, nativeUsers.email, nativeUsers.createdAt, userProfiles.image)
       .limit(20);
 
     return NextResponse.json(
@@ -39,6 +41,7 @@ export async function GET(request: NextRequest) {
         displayName: user.username,
         videoCount: Number(user.videoCount ?? 0),
         createdAt: user.createdAt,
+        profileImage: user.profileImage || null,
       })),
     );
   } catch (error) {

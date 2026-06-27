@@ -8,6 +8,13 @@
       "when": 1780244688593,
       "tag": "0000_tearful_mephistopheles",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1782469870073,
+      "tag": "0001_add_displayname_bio",
+      "breakpoints": true
     }
   ]
 }

@@ -1,8 +1,6 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
-import { Button } from "@/components/ui/button";
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { Users } from "lucide-react";
+import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { useMovieDetail } from "../movie/MovieDetailProvider";
 import { RandomMovieButton } from "../movie/RandomMovieButton";
 import { toast } from "sonner";
@@ -207,11 +205,6 @@ export default function SessionContent() {
                 value={fallbackValue}
             />
             <Sheet open={isOpen} onOpenChange={setIsOpen}>
-            <SheetTrigger asChild className="absolute left-6">
-                <Button variant="ghost" size="icon" className="text-foreground size-10 hover:bg-muted/30!">
-                    <Users className="size-5" />
-                </Button>
-            </SheetTrigger>
             <SheetContent side="left" className="sm:max-w-md w-full px-4 gap-2">
                 <SessionHeader
                     activeCode={activeCode}

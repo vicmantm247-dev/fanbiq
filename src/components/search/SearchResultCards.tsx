@@ -1,6 +1,9 @@
+'use client';
+
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   Card,
   CardContent,
@@ -10,7 +13,10 @@ import {
 } from "@/components/ui/card";
 import { Play } from "lucide-react";
 import Link from "next/link";
-import { useRef, useEffect, useCallback } from "react";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
+import Image from "next/image";
+import { FlickPreviewCard } from "@/components/flicks/FlickPreviewCard";
 
 export interface SearchMovieResult {
   id: string;
@@ -46,6 +52,7 @@ export interface SearchUserResult {
   videos: number;
   avatarInitials: string;
   badges: string[];
+  profilePicUrl?: string;
 }
 
 const formatCount = (value: number) => {
@@ -123,187 +130,51 @@ export function SearchFlickCard({
   flick: SearchFlickResult;
   animationDelay?: number;
 }) {
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const progressRef = useRef<HTMLDivElement>(null);
-  const muteHintRef = useRef<HTMLDivElement>(null);
-  const muteTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  // ── IntersectionObserver: play / pause on visibility ──────────────────────
-  useEffect(() => {
-    const vid = videoRef.current;
-    if (!vid) return;
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            vid.play().catch(() => {});
-          } else {
-            vid.pause();
-          }
-        });
-      },
-      { threshold: 0.25 },
-    );
-
-    observer.observe(vid);
-    return () => observer.disconnect();
-  }, []);
-
-  // ── Progress bar timeupdate ────────────────────────────────────────────────
-  useEffect(() => {
-    const vid = videoRef.current;
-    const fill = progressRef.current;
-    if (!vid || !fill) return;
-
-    const onTime = () => {
-      if (vid.duration) {
-        fill.style.width = `${(vid.currentTime / vid.duration) * 100}%`;
-      }
-    };
-    const onEnded = () => { fill.style.width = "0%"; };
-
-    vid.addEventListener("timeupdate", onTime);
-    vid.addEventListener("ended", onEnded);
-    return () => {
-      vid.removeEventListener("timeupdate", onTime);
-      vid.removeEventListener("ended", onEnded);
-    };
-  }, []);
-
-  // ── Tap to toggle mute ────────────────────────────────────────────────────
-  const handleVideoClick = useCallback((e: React.MouseEvent) => {
-    e.stopPropagation();
-    const vid = videoRef.current;
-    const hint = muteHintRef.current;
-    if (!vid || !hint) return;
-
-    vid.muted = !vid.muted;
-    hint.querySelector("span")!.textContent = vid.muted ? "Muted" : "Sound on";
-    hint.style.opacity = "1";
-
-    if (muteTimerRef.current) clearTimeout(muteTimerRef.current);
-    muteTimerRef.current = setTimeout(() => {
-      if (hint) hint.style.opacity = "0";
-    }, 1600);
-  }, []);
-
   return (
-    <div
-      className="cursor-pointer group"
-      style={{
-        animation: "flickFadeUp 0.45s ease both",
-        animationDelay: `${animationDelay}ms`,
+    <FlickPreviewCard
+      flick={{
+        id: flick.id,
+        movieTitle: flick.movieTitle,
+        videoUrl: flick.videoUrl,
+        posterUrl: flick.thumbnailUrl,
       }}
-    >
-      {/* ── Media wrap — this is the ONLY element that clips and rounds ── */}
-      <div className="relative rounded-2xl overflow-hidden bg-black">
-
-        {/* Video — width 100%, height natural from source aspect ratio */}
-        <video
-          ref={videoRef}
-          src={flick.videoUrl}
-          poster={flick.thumbnailUrl}
-          autoPlay
-          muted
-          loop
-          playsInline
-          preload="none"
-          onClick={handleVideoClick}
-          className="w-full block object-cover"
-          style={{ display: "block" }}
-        />
-
-        {/* Mute hint pill — top-left, fades out after tap */}
-        <div
-          ref={muteHintRef}
-          className="absolute top-2 left-2 z-10 flex items-center gap-1 rounded-full px-2 py-0.5 pointer-events-none"
-          style={{
-            background: "rgba(0,0,0,0.50)",
-            opacity: 0,
-            transition: "opacity 0.5s ease",
-          }}
-        >
-          {/* Mute icon */}
-          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" className="shrink-0">
-            <path d="M11 5L6 9H2v6h4l5 4V5z" fill="#fff" />
-          </svg>
-          <span className="text-[10px] font-semibold text-white whitespace-nowrap">Muted</span>
-        </div>
-
-        {/* Three-dot menu — top-right */}
-        <button
-          className="absolute top-2 right-2 z-10 w-[26px] h-[26px] rounded-full flex flex-col items-center justify-center gap-[2.5px]"
-          style={{ background: "rgba(0,0,0,0.50)" }}
-          aria-label="Options"
-          onClick={(e) => e.stopPropagation()}
-        >
-          <span className="w-[3px] h-[3px] rounded-full bg-white block" />
-          <span className="w-[3px] h-[3px] rounded-full bg-white block" />
-          <span className="w-[3px] h-[3px] rounded-full bg-white block" />
-        </button>
-
-        {/* Duration badge — bottom-right, above progress bar (mirrors bottom:48px offset) */}
-        <span
-          className="absolute right-2 z-10 rounded-md px-1.5 py-0.5 text-[10px] font-semibold text-white"
-          style={{ bottom: "14px", background: "rgba(0,0,0,0.60)" }}
-        >
-          {flick.duration}
-        </span>
-
-        {/* Progress bar — bottom edge of media wrap */}
-        <div
-          className="absolute bottom-0 inset-x-0 z-10"
-          style={{ height: "3px", background: "rgba(255,255,255,0.18)" }}
-        >
-          <div
-            ref={progressRef}
-            className="h-full rounded-r-sm"
-            style={{ width: "0%", background: "#c8ff00", transition: "width 0.25s linear" }}
-          />
-        </div>
-      </div>
-
-      {/* ── Label block — OUTSIDE the clip, below the rounded media ── */}
-      <div className="pt-[6px] pb-[2px] px-1">
-        {/* Movie source — Syne weight, mirrors .card-source */}
-        <p className="text-[12px] font-bold text-foreground leading-tight" style={{ fontFamily: "var(--font-syne, 'Syne', sans-serif)" }}>
-          {flick.movieTitle}
-        </p>
-        {/* Caption — DM Sans muted, mirrors .card-title */}
-        <p className="mt-[1px] text-[12px] text-muted-foreground leading-snug line-clamp-2">
-          {flick.caption}
-        </p>
-      </div>
-
-      {/* ── Uploader row — also outside the clip ── */}
-      <div className="flex items-center gap-1.5 px-1 pb-1 mt-0.5">
-        <Avatar className="size-4 shrink-0">
-          <AvatarFallback className="text-[8px] font-semibold">
-            {flick.uploader.slice(0, 2).toUpperCase()}
-          </AvatarFallback>
-        </Avatar>
-        <span className="text-[11px] text-muted-foreground truncate">
-          @{flick.uploader}
-        </span>
-      </div>
-    </div>
+      animationDelay={animationDelay}
+    />
   );
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// SearchUserCard — unchanged
-// ─────────────────────────────────────────────────────────────────────────────
 export function SearchUserCard({ user }: { user: SearchUserResult }) {
+  const router = useRouter();
+  const [imageLoading, setImageLoading] = useState(true);
+  
+  const handleNavigateToProfile = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    router.push(`/${user.username}`);
+  };
+
   return (
-    <div className="flex gap-4 mb-4 p-3 rounded-lg border transition-colors cursor-pointer bg-card border-border hover:bg-card/80">
-      <div className="relative shrink-0 flex flex-col items-center gap-2">
-        <Avatar className="w-16 h-24 rounded-lg">
-          <AvatarFallback className="text-2xl font-semibold rounded-lg">{user.avatarInitials}</AvatarFallback>
-        </Avatar>
-        <Button asChild size="sm" variant="secondary" className="w-16 h-8 px-2 text-xs">
-          <span>Follow</span>
-        </Button>
+    <div 
+      className="flex gap-4 mb-4 rounded-lg p-3 transition-colors cursor-pointer bg-card hover:bg-card/80"
+      onClick={handleNavigateToProfile}
+    >
+      <div className="relative shrink-0 w-16 h-16 rounded-lg overflow-hidden">
+        {user.profilePicUrl ? (
+          <>
+            {imageLoading && <Skeleton className="w-16 h-16" />}
+            <Image
+              src={user.profilePicUrl}
+              alt={user.displayName}
+              fill
+              className="object-cover rounded-lg"
+              onLoadingComplete={() => setImageLoading(false)}
+            />
+          </>
+        ) : (
+          <Avatar className="w-16 h-16 rounded-lg">
+            <AvatarFallback className="text-2xl font-semibold rounded-lg">{user.avatarInitials}</AvatarFallback>
+          </Avatar>
+        )}
       </div>
 
       <div className="flex flex-col justify-between flex-1 min-w-0">
@@ -313,24 +184,6 @@ export function SearchUserCard({ user }: { user: SearchUserResult }) {
             <p className="text-xs text-muted-foreground">@{user.username}</p>
           </div>
           <p className="text-xs text-muted-foreground line-clamp-2 leading-relaxed mb-2">{user.bio}</p>
-          <div className="flex flex-wrap gap-1">
-            {user.badges.map((badge) => (
-              <Badge key={badge} variant="outline" className="text-xs">
-                {badge}
-              </Badge>
-            ))}
-          </div>
-        </div>
-
-        <div className="flex gap-3 text-xs mt-2">
-          <div className="flex items-center gap-1">
-            <span className="text-muted-foreground">Followers:</span>
-            <span className="font-semibold">{formatCount(user.followers)}</span>
-          </div>
-          <div className="flex items-center gap-1">
-            <span className="text-muted-foreground">Videos:</span>
-            <span className="font-semibold">{formatCount(user.videos)}</span>
-          </div>
         </div>
       </div>
     </div>

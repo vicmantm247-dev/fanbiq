@@ -224,7 +224,7 @@ export function SwipeVideoFeed({ isActive = true }: SwipeVideoFeedProps) {
         )}
       </div>
 
-      <div className="absolute inset-x-0 bottom-0 z-40 flex justify-center pb-[calc(1.5rem+env(safe-area-inset-bottom))] px-4">
+      <div className="absolute inset-x-0 bottom-0 z-40 flex justify-center px-4 pb-[max(4.7rem,env(safe-area-inset-bottom))]">
         <DeckControls
           onRewind={openActiveMovie}
           onSwipeLeft={() => swipeCurrent("left")}

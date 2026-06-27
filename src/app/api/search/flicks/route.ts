@@ -12,7 +12,7 @@ interface SearchFlickMatch {
   caption: string | null;
   videoUrl: string;
   thumbnailUrl: string | null;
-  durationSeconds: number;
+  durationSeconds: number | null;
 }
 
 export async function GET(request: NextRequest) {
@@ -33,7 +33,7 @@ export async function GET(request: NextRequest) {
         caption: flicks.caption,
         videoUrl: flicks.videoUrl,
         thumbnailUrl: flicks.movieBackdropUrl,
-        durationSeconds: sql<number>`0`,
+        durationSeconds: sql<number | null>`NULL`,
       })
       .from(flicks)
       .where(sql`
@@ -52,7 +52,7 @@ export async function GET(request: NextRequest) {
         caption: flick.caption ?? "",
         videoUrl: flick.videoUrl,
         thumbnailUrl: flick.thumbnailUrl ?? "",
-        durationSeconds: 0,
+        durationSeconds: null,
       })),
     );
   } catch (error) {

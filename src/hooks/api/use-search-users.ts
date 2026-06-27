@@ -7,6 +7,7 @@ export interface SearchUserApiResult {
   displayName: string;
   videoCount: number;
   createdAt: string;
+  profileImage: string | null;
 }
 
 export function useSearchUsers(query: string) {

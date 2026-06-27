@@ -7,7 +7,7 @@ import {
     SheetTitle,
     SheetTrigger,
 } from "@/components/ui/sheet";
-import { Bell, Menu, MessageCircle, Users, Upload, User } from "lucide-react";
+import { Bell, Menu, ArrowRight, Users, Upload, User } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { apiClient } from "@/lib/api-client";
@@ -124,7 +124,7 @@ export function SettingsSidebar() {
                                                     </div>
                                                     <span>Notifications</span>
                                                 </div>
-                                                <MessageCircle className="size-4 text-muted-foreground" />
+                                                <ArrowRight className="size-4 text-muted-foreground" />
                                             </div>
                                         </Link>
                                     </Button>
@@ -140,7 +140,7 @@ export function SettingsSidebar() {
                                             </div>
                                             <span>Sessions</span>
                                         </div>
-                                        <MessageCircle className="size-4 text-muted-foreground" />
+                                        <ArrowRight className="size-4 text-muted-foreground" />
                                     </Button>
 
                                     <Button
@@ -156,7 +156,7 @@ export function SettingsSidebar() {
                                                     </div>
                                                     <span>Upload</span>
                                                 </div>
-                                                <MessageCircle className="size-4 text-muted-foreground" />
+                                                <ArrowRight className="size-4 text-muted-foreground" />
                                             </div>
                                         </Link>
                                     </Button>

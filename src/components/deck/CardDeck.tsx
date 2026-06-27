@@ -364,18 +364,20 @@ export function CardDeck() {
         )}
       </div>
 
-      <DeckControls
-        onRewind={rewind}
-        onSwipeLeft={() => handleSwipeAction("left")}
-        onSwipeRight={() => handleSwipeAction("right")}
-        onToggleLike={handleToggleLike}
-        onOpenFilter={() => setIsFilterOpen(true)}
-        canRewind={!!lastSwipe}
-        isLiked={isLiked}
-        hasAppliedFilters={hasAppliedFilters}
-        leftSwipesRemaining={leftSwipesRemaining}
-        rightSwipesRemaining={rightSwipesRemaining}
-      />
+      <div className="absolute inset-x-0 bottom-0 z-20 flex justify-center px-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
+        <DeckControls
+          onRewind={rewind}
+          onSwipeLeft={() => handleSwipeAction("left")}
+          onSwipeRight={() => handleSwipeAction("right")}
+          onToggleLike={handleToggleLike}
+          onOpenFilter={() => setIsFilterOpen(true)}
+          canRewind={!!lastSwipe}
+          isLiked={isLiked}
+          hasAppliedFilters={hasAppliedFilters}
+          leftSwipesRemaining={leftSwipesRemaining}
+          rightSwipesRemaining={rightSwipesRemaining}
+        />
+      </div>
 
       <MatchOverlay
         item={matchedItem}

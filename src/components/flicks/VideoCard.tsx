@@ -1,6 +1,7 @@
 "use client";
 
 import { type MouseEvent, useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import {
   Play,
   Pause,
@@ -54,68 +55,8 @@ function formatCount(n: number): string {
   return String(n);
 }
 
-const DUMMY_COMMENTS: Comment[] = [
-  {
-    id: "c1",
-    userId: "u_hae",
-    username: "hae_sung",
-    avatarColor: "#c8ff00",
-    isCreator: true,
-    text: "For everyone asking — yes, the song at the end is \"Decisions\" by Hadestown. It ruins me every time 🎵",
-    likes: 847,
-    timestamp: "3d",
-    replies: [
-      {
-        id: "r1",
-        userId: "u_cine",
-        username: "cinephile_max",
-        avatarColor: "#a78bfa",
-        text: "Thank you!! I've been looking for this for days",
-        timestamp: "3d",
-      },
-    ],
-    replyCount: 34,
-  },
-  {
-    id: "c2",
-    userId: "u_bella",
-    username: "bella_discourse",
-    avatarColor: "#fb7185",
-    text: "The way Celine's face completely breaks in those last 10 seconds... Celine Song is a genius. This film should've won everything.",
-    likes: 412,
-    timestamp: "2d",
-  },
-  {
-    id: "c3",
-    userId: "u_sand",
-    username: "sandworm_fan",
-    avatarColor: "#60a5fa",
-    text: "I watched this with my ex. We cried together. We broke up 2 weeks later. This movie knew something we didn't.",
-    likes: 2100,
-    timestamp: "1d",
-    replyCount: 89,
-  },
-  {
-    id: "c4",
-    userId: "u_paul",
-    username: "paulhunham",
-    avatarColor: "#34d399",
-    text: "People keep comparing this to Before Sunrise but Past Lives hits different because it's about all the lives you chose NOT to live.",
-    likes: 634,
-    timestamp: "20h",
-  },
-  {
-    id: "c5",
-    userId: "u_movie",
-    username: "movielogic99",
-    avatarColor: "#f97316",
-    text: "Just found fanbiQ through this clip and I've already added 6 movies to my watchlist. What is this app 😭",
-    likes: 291,
-    timestamp: "8h",
-  },
-];
-
 export function VideoCard({ flick, isActive, isFeedActive, profileButtonAction, hideProfileButton, onDelete }: VideoCardProps) {
+  const router = useRouter();
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const [liked, setLiked] = useState(false);
   const [playing, setPlaying] = useState(false);
@@ -126,6 +67,7 @@ export function VideoCard({ flick, isActive, isFeedActive, profileButtonAction, 
   const [likeCount, setLikeCount] = useState(flick.likes);
   const [heartBurst, setHeartBurst] = useState(false);
   const [showControls, setShowControls] = useState(false);
+  const [isCaptionExpanded, setIsCaptionExpanded] = useState(false);
 
   const [commentsOpen, setCommentsOpen] = useState(false);
 
@@ -347,15 +289,30 @@ export function VideoCard({ flick, isActive, isFeedActive, profileButtonAction, 
       ───────────────────────────────────────────────────────────────────── */}
       <div className="absolute bottom-[110px] left-0 right-0 px-4 pb-20 z-30">
         <div className="flex items-center gap-1 mb-2.5">
-          <Avatar className="size-7 shrink-0 border border-white/25">
-            <AvatarImage src={flick.uploaderAvatarUrl} alt={flick.uploader} className="object-cover" />
-            <AvatarFallback className="text-[10px] font-bold uppercase bg-white/10 text-white">
-              {flick.uploader[0]}
-            </AvatarFallback>
-          </Avatar>
-          <span className="text-white text-[13px] font-semibold leading-tight truncate min-w-0 drop-shadow">
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              router.push(`/${flick.uploader}`);
+            }}
+            className="shrink-0 hover:opacity-80 transition-opacity"
+            aria-label={`View ${flick.uploader}'s profile`}
+          >
+            <Avatar className="size-7 shrink-0 border border-white/25">
+              <AvatarImage src={flick.uploaderAvatarUrl} alt={flick.uploader} className="object-cover" />
+              <AvatarFallback className="text-[10px] font-bold uppercase bg-white/10 text-white">
+                {flick.uploader[0]}
+              </AvatarFallback>
+            </Avatar>
+          </button>
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              router.push(`/${flick.uploader}`);
+            }}
+            className="text-white text-[13px] font-semibold leading-tight truncate min-w-0 drop-shadow hover:underline transition-colors"
+          >
             @{flick.uploader}
-          </span>
+          </button>
 
           {!hideProfileButton && (
             profileButtonAction ? (
@@ -398,16 +355,31 @@ export function VideoCard({ flick, isActive, isFeedActive, profileButtonAction, 
           </button>
         )}
 
-        <p className="text-white/88 text-[13px] leading-snug line-clamp-3 drop-shadow mt-1">
-          {flick.caption}
-        </p>
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            setIsCaptionExpanded((prev) => !prev);
+          }}
+          className="mt-1 block max-w-full text-left"
+          aria-expanded={isCaptionExpanded}
+        >
+          <p
+            className={cn(
+              "overflow-hidden text-white/88 text-[13px] leading-snug drop-shadow transition-[max-height,opacity] duration-300 ease-out",
+              isCaptionExpanded ? "line-clamp-none max-h-24 opacity-100" : "line-clamp-1 max-h-5 opacity-90"
+            )}
+          >
+            {flick.caption}
+          </p>
+        </button>
       </div>
 
       {/* ── Comments Sheet ── */}
       <CommentsSheet
         flick={flick}
         totalCount={flick.comments}
-        comments={DUMMY_COMMENTS}
+        comments={[]}
         open={commentsOpen}
         onClose={() => {
           setCommentsOpen(false);

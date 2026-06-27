@@ -9,6 +9,7 @@ import { ProviderType } from "@/lib/providers/types";
 import { ConfigService } from "./config-service";
 import { logger } from "@/lib/logger";
 import { encryptValue, getGuestLendingSecret } from "@/lib/security/crypto";
+import { NotificationService } from "./notification-service";
 
 export class SessionService {
   private static generateCode(): string {
@@ -89,6 +90,19 @@ export class SessionService {
       target: [sessionMembers.sessionCode, sessionMembers.externalUserId],
       set: { settings: settings ? JSON.stringify(settings) : null }
     });
+
+    const sessionMembersList = await db.select({ externalUserId: sessionMembers.externalUserId, externalUserName: sessionMembers.externalUserName }).from(sessionMembers).where(eq(sessionMembers.sessionCode, upperCode));
+    for (const member of sessionMembersList) {
+      if (member.externalUserId === user.Id) continue;
+      await NotificationService.create({
+        recipientId: member.externalUserId,
+        actorId: user.Id,
+        actorName: user.Name,
+        type: 'session_join',
+        message: `${user.Name} joined your session ${upperCode}`,
+        sessionCode: upperCode,
+      });
+    }
 
     await EventService.emit(EVENT_TYPES.USER_JOINED, { sessionCode: upperCode, userName: user.Name, userId: user.Id });
     await EventService.emit(EVENT_TYPES.SESSION_UPDATED, upperCode);
@@ -336,7 +350,7 @@ export class SessionService {
         if (isMatch) {
           await db.update(likes).set({ isMatch: true }).where(and(eq(likes.sessionCode, sessionCode), eq(likes.externalId, itemId)));
           await EventService.emit(EVENT_TYPES.MATCH_FOUND, { sessionCode, itemId, swiperId: user.Id, itemName: item?.Name || "a movie" });
-          
+
           const allItemLikes = await db.query.likes.findMany({
             where: and(eq(likes.sessionCode, sessionCode), eq(likes.externalId, itemId))
           });
@@ -357,6 +371,35 @@ export class SessionService {
               userName: user.Name,
               hasCustomProfilePicture: !!currentUserProfile,
               profileUpdatedAt: currentUserProfile?.updatedAt,
+            });
+          }
+
+          const sessionRecord = await db.select({ hostUserId: sessions.hostUserId }).from(sessions).where(eq(sessions.code, sessionCode)).then((rows: any[]) => rows[0]);
+          const recipientIds = new Set<string>();
+          for (const member of members) {
+            if (member.externalUserId) recipientIds.add(member.externalUserId);
+          }
+          for (const recipientId of recipientIds) {
+            if (recipientId === user.Id) continue;
+            await NotificationService.create({
+              recipientId,
+              actorId: user.Id,
+              actorName: user.Name,
+              type: 'session_match',
+              message: `${user.Name} matched ${item?.Name || 'a movie'} in session ${sessionCode}`,
+              sessionCode,
+              relatedId: itemId,
+            });
+          }
+          if (sessionRecord?.hostUserId && sessionRecord.hostUserId !== user.Id) {
+            await NotificationService.create({
+              recipientId: sessionRecord.hostUserId,
+              actorId: user.Id,
+              actorName: user.Name,
+              type: 'session_match',
+              message: `${user.Name} matched ${item?.Name || 'a movie'} in session ${sessionCode}`,
+              sessionCode,
+              relatedId: itemId,
             });
           }
         }

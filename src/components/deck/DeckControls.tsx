@@ -38,11 +38,11 @@ export function DeckControls({
   const isRightSwipeDisabled = rightSwipesRemaining !== undefined ? rightSwipesRemaining < 1 : undefined
 
   return (
-    <div className="flex space-x-6 z-2 mt-auto mb-[calc(4.75rem+env(safe-area-inset-bottom))] items-center">
+    <div className="flex items-center justify-center gap-6 z-2 w-full">
       <Button
         size="icon"
         variant="secondary"
-        className="h-12 w-12 rounded-full bg-background/50 border-2 overflow-hidden relative"
+        className="h-10 w-10 rounded-full bg-background/50 border-0 overflow-hidden relative"
         onClick={onRewind}
         disabled={!canRewind}
         aria-label={rewindAriaLabel ?? "Open movie details"}
