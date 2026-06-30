@@ -96,13 +96,15 @@ export const userSettingsSchema = z.object({
   watchRegion: z.string().min(2).max(2),
 });
 
+export const usernameSchema = z
+  .string()
+  .min(3, "Username must be at least 3 characters")
+  .max(30, "Username must be 30 characters or fewer")
+  .regex(/^[a-zA-Z0-9_]+$/, "Username can only contain letters, numbers, and underscores");
+
 export const registerSchema = z.object({
   email: z.email("Invalid email address"),
-  username: z
-    .string()
-    .min(3, "Username must be at least 3 characters")
-    .max(30, "Username must be 30 characters or fewer")
-    .regex(/^[a-zA-Z0-9_]+$/, "Username can only contain letters, numbers, and underscores"),
+  username: usernameSchema,
   password: z
     .string()
     .min(8, "Password must be at least 8 characters")
