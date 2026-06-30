@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import { db, nativeUsers, verificationTokens } from "@/db";
 import { registerSchema } from "@/lib/validations";
 import { sendVerificationEmail } from "@/lib/email";
@@ -31,6 +31,7 @@ export async function POST(request: NextRequest) {
 
     const { email, username, password } = validated.data;
     const normalizedEmail = email.toLowerCase().trim();
+    const normalizedUsername = username.trim().toLowerCase();
 
     // Check existing email
     const existingByEmail = await db
@@ -46,11 +47,11 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Check existing username
+    // Check existing username (case-insensitive)
     const existingByUsername = await db
       .select()
       .from(nativeUsers)
-      .where(eq(nativeUsers.username, username))
+      .where(sql`lower(${nativeUsers.username}) = lower(${normalizedUsername})`)
       .then((r: typeof nativeUsers.$inferSelect[]) => r[0]);
 
     if (existingByUsername) {
@@ -67,7 +68,7 @@ export async function POST(request: NextRequest) {
     await db.insert(nativeUsers).values({
       id: userId,
       email: normalizedEmail,
-      username,
+      username: normalizedUsername,
       passwordHash,
       isVerified: false,
     });

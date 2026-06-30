@@ -57,7 +57,7 @@ function formatCount(n: number): string {
 function StatItem({ num, label }: { num: number; label: string }) {
   return (
     <div className="flex flex-col">
-      <div className="text-base font-extrabold">{formatCount(num)}</div>
+      <div className="text-md font-semibold">{formatCount(num)}</div>
       <div className="text-xs text-muted-foreground">{label}</div>
     </div>
   );
@@ -172,21 +172,17 @@ export default function UserProfilePage({
           {/* Avatar + Name + ID */}
           <div className="flex items-center gap-3 mb-4">
             <div className="relative flex-shrink-0">
-              {/* Avatar ring */}
-              <div className="w-22 h-22 rounded-full p-0.5 bg-background border-2 border-background ring-1 ring-border">
-                <Avatar className="w-full h-full border-2 border-background">
-                  <AvatarImage src={avatarUrl} alt={displayName} />
-                  <AvatarFallback className="text-lg font-bold">
-                    {displayName.charAt(0).toUpperCase()}
-                  </AvatarFallback>
-                </Avatar>
-              </div>
-
+              <Avatar className="w-22 h-22 border-2 border-background">
+                <AvatarImage src={avatarUrl} alt={displayName} />
+                <AvatarFallback className="text-lg font-bold">
+                  {displayName.charAt(0).toUpperCase()}
+                </AvatarFallback>
+              </Avatar>
             </div>
 
             <div className="flex-1">
               <div className="flex items-center gap-2 mb-1">
-                <h1 className="text-lg font-extrabold">{displayName}</h1>
+                <h1 className="text-xl font-semibold">{displayName}</h1>
                 {isVerified ? (
                   <div title="Verified">
                     <BadgeCheck className="w-5 h-5 text-blue-500 flex-shrink-0" />
@@ -197,7 +193,7 @@ export default function UserProfilePage({
                   </Badge>
                 )}
               </div>
-              <p className="text-sm text-muted-foreground">ID:{username}</p>
+              <div className="text-sm text-muted-foreground">@{username}</div>
             </div>
           </div>
 
@@ -210,15 +206,7 @@ export default function UserProfilePage({
 
           {/* Bio */}
           <div className="space-y-2 pb-2">
-            <div className="text-sm font-semibold">{displayName}</div>
             {bio && <div className="text-sm text-foreground">{bio}</div>}
-            <div className="flex items-center gap-2 text-sm cursor-pointer">
-              <div className="w-4 h-4 rounded-full bg-foreground flex items-center justify-center">
-                <span className="text-xs text-background">▶</span>
-              </div>
-              <span>fanbiQ</span>
-              <span className="text-muted-foreground">›</span>
-            </div>
           </div>
 
           {/* CTA Buttons */}

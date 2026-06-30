@@ -55,22 +55,6 @@ export function AboutSettings({ onShowUserGuide }: AboutSettingsProps) {
                 <Button
                     variant="outline"
                     className="w-full justify-between font-normal h-12 px-3 py-7"
-                    asChild
-                >
-                    <a href={GITHUB_URL} target="_blank" rel="noreferrer">
-                        <div className="flex items-center gap-3">
-                            <div className="p-2 bg-primary/10 rounded-md">
-                                <Code className="size-4" />
-                            </div>
-                            <span>Source code</span>
-                        </div>
-                        <ExternalLink className="size-4 text-muted-foreground" />
-                    </a>
-                </Button>
-
-                <Button
-                    variant="outline"
-                    className="w-full justify-between font-normal h-12 px-3 py-7"
                     onClick={handleCheckUpdate}
                     disabled={isCheckingVersion}
                 >

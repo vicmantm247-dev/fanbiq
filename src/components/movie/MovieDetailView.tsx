@@ -19,19 +19,20 @@ import { ticksToTime, cn } from "@/lib/utils";
 import { apiClient } from "@/lib/api-client";
 import { useMovieActions } from "@/hooks/use-movie-actions";
 import { QUERY_KEYS } from "@/hooks/api/query-keys";
-import { TMDB_MOVIE_BASE_URL } from "@/lib/constants";
+import { TMDB_MOVIE_BASE_URL, TMDB_TV_BASE_URL } from "@/lib/constants";
 import { getLanguageLabel } from "@/lib/language";
 import { getProviderDetailsUrl } from "@/lib/provider-links";
 import { ProviderType } from "@/lib/providers/types";
 
 interface Props {
   movieId: string | null;
+  mediaType?: 'movie' | 'tv';
   onClose: () => void;
   showLikedBy?: boolean;
   sessionCode?: string | null;
 }
 
-export function MovieDetailView({ movieId, onClose, showLikedBy = true, sessionCode }: Props) {
+export function MovieDetailView({ movieId, mediaType, onClose, showLikedBy = true, sessionCode }: Props) {
   // 1. Create a manual motion value for scroll position
   const scrollY = useMotionValue(0);
 
@@ -46,11 +47,12 @@ export function MovieDetailView({ movieId, onClose, showLikedBy = true, sessionC
   };
 
   const { data: movie, isLoading } = useQuery({
-    queryKey: QUERY_KEYS.movie(movieId, sessionCode, true),
+    queryKey: QUERY_KEYS.movie(movieId, sessionCode, true, mediaType ?? null),
     queryFn: async () => {
       if (!movieId) return null;
       const codeParam = sessionCode === null ? "" : (sessionCode ?? "");
-      const res = await apiClient.get<MediaItem>(`/api/media/item/${movieId}?sessionCode=${codeParam}&includeUserState=1`);
+      const mediaTypeParam = mediaType ? `&mediaType=${mediaType}` : "";
+      const res = await apiClient.get<MediaItem>(`/api/media/item/${movieId}?sessionCode=${codeParam}&includeUserState=1${mediaTypeParam}`);
       return res.data;
     },
     enabled: !!movieId,
@@ -70,7 +72,8 @@ export function MovieDetailView({ movieId, onClose, showLikedBy = true, sessionC
   } = useMovieActions(movie || null, {
     onUnlikeSuccess: onClose,
     sessionCode,
-    includeUserState: true
+    includeUserState: true,
+    mediaType,
   });
 
   const { serverPublicUrl: runtimeServerUrl, capabilities: runtimeCapabilities, provider: runtimeProvider } = useRuntimeConfig();
@@ -225,7 +228,7 @@ export function MovieDetailView({ movieId, onClose, showLikedBy = true, sessionC
                     </Link>
                   ) : (
                     <Link 
-                      href={`${TMDB_MOVIE_BASE_URL}/${movie.Id}`} 
+                      href={`${mediaType === 'tv' ? TMDB_TV_BASE_URL : TMDB_MOVIE_BASE_URL}/${movie.Id}`} 
                       target="_blank" 
                       rel="noopener noreferrer" 
                       className="w-32"

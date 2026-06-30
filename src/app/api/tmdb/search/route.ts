@@ -32,7 +32,7 @@ export async function GET(request: NextRequest) {
       path ? `https://image.tmdb.org/t/p/w500${path.startsWith('/') ? path : `/${path}`}` : '';
 
     const mapped = results
-      .filter((item: any) => item.media_type === 'movie')
+      .filter((item: any) => item.media_type === 'movie' || item.media_type === 'tv')
       .slice(0, 6)
       .map((item: any) => {
         const posterPath = item.poster_path || '';
@@ -40,6 +40,7 @@ export async function GET(request: NextRequest) {
         return {
           tmdbId: item.id,
           title: item.title || item.name || '',
+          mediaType: item.media_type,
           year: (item.release_date || item.first_air_date || '').slice(0, 4),
           posterPath,
           backdropPath,

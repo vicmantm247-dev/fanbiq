@@ -86,6 +86,7 @@ export const POPULAR_LANGUAGE_CODES = [
 ];
 
 export const TMDB_MOVIE_BASE_URL = "https://www.themoviedb.org/movie";
+export const TMDB_TV_BASE_URL = "https://www.themoviedb.org/tv";
 
 export const DEFAULT_TMDB_REGION = "SE";
 

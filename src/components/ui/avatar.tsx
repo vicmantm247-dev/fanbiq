@@ -2,6 +2,7 @@
 
 import * as React from "react"
 import * as AvatarPrimitive from "@radix-ui/react-avatar"
+import { User } from "lucide-react"
 
 import { cn } from "@/lib/utils"
 
@@ -36,6 +37,7 @@ function AvatarImage({
 
 function AvatarFallback({
   className,
+  children,
   ...props
 }: React.ComponentProps<typeof AvatarPrimitive.Fallback>) {
   return (
@@ -46,7 +48,9 @@ function AvatarFallback({
         className
       )}
       {...props}
-    />
+    >
+      {children ?? <User className="size-5 text-muted-foreground" />}
+    </AvatarPrimitive.Fallback>
   )
 }
 

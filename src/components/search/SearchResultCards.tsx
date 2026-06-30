@@ -2,7 +2,7 @@
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   Card,
@@ -155,27 +155,25 @@ export function SearchUserCard({ user }: { user: SearchUserResult }) {
 
   return (
     <div 
-      className="flex gap-4 mb-4 rounded-lg p-3 transition-colors cursor-pointer bg-card hover:bg-card/80"
+      className="flex gap-4 mb-4 rounded-lg p-1 transition-colors cursor-pointer bg-muted/90 hover:bg-muted/90"
       onClick={handleNavigateToProfile}
     >
-      <div className="relative shrink-0 w-16 h-16 rounded-lg overflow-hidden">
+      <Avatar className="relative shrink-0 w-16 h-16 rounded-lg overflow-hidden">
         {user.profilePicUrl ? (
           <>
-            {imageLoading && <Skeleton className="w-16 h-16" />}
+            {imageLoading && <Skeleton className="absolute inset-0" />}
             <Image
               src={user.profilePicUrl}
               alt={user.displayName}
               fill
-              className="object-cover rounded-lg"
+              className="object-cover"
               onLoadingComplete={() => setImageLoading(false)}
             />
           </>
         ) : (
-          <Avatar className="w-16 h-16 rounded-lg">
-            <AvatarFallback className="text-2xl font-semibold rounded-lg">{user.avatarInitials}</AvatarFallback>
-          </Avatar>
+          <AvatarFallback className="text-2xl font-semibold rounded-lg">{user.avatarInitials}</AvatarFallback>
         )}
-      </div>
+      </Avatar>
 
       <div className="flex flex-col justify-between flex-1 min-w-0">
         <div>
@@ -183,7 +181,7 @@ export function SearchUserCard({ user }: { user: SearchUserResult }) {
             <h3 className="font-bold line-clamp-1 text-foreground">{user.displayName}</h3>
             <p className="text-xs text-muted-foreground">@{user.username}</p>
           </div>
-          <p className="text-xs text-muted-foreground line-clamp-2 leading-relaxed mb-2">{user.bio}</p>
+          <p className="text-xs text-muted-foreground line-clamp-2 leading-relaxed mb-0">{user.bio}</p>
         </div>
       </div>
     </div>

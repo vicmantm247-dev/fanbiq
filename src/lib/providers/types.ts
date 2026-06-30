@@ -114,7 +114,7 @@ export interface MediaProvider {
 
   // Items
   getItems(filters: SearchFilters, auth?: AuthContext): Promise<MediaItem[]>;
-  getItemDetails(id: string, auth?: AuthContext, options?: { includeUserState?: boolean }): Promise<MediaItem>;
+  getItemDetails(id: string, auth?: AuthContext, options?: { includeUserState?: boolean; mediaType?: 'movie' | 'tv' }): Promise<MediaItem>;
   
   // Metadata
   getGenres(auth?: AuthContext): Promise<MediaGenre[]>;

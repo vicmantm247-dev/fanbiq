@@ -5,6 +5,7 @@ import type { MergedLike } from "@/types";
 interface TmdbSearchResult {
   tmdbId: number;
   title: string;
+  mediaType: 'movie' | 'tv';
   year: string;
   posterPath: string;
   backdropPath: string;
@@ -14,6 +15,7 @@ function mapTmdbResult(result: TmdbSearchResult): MergedLike {
   return {
     Id: String(result.tmdbId),
     Name: result.title,
+    mediaType: result.mediaType,
     ProductionYear: result.year ? parseInt(result.year, 10) : undefined,
     Overview: undefined,
     Genres: [],

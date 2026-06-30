@@ -25,6 +25,7 @@ import { useSearchUsers } from '@/hooks/api/use-search-users';
 import { useSearchFlicks } from '@/hooks/api/use-search-flicks';
 import { useSearchTmdb } from '@/hooks/api/use-search-tmdb';
 import { useMovieDetail } from '@/components/movie/MovieDetailProvider';
+import { TMDB_MOVIE_BASE_URL, TMDB_TV_BASE_URL } from '@/lib/constants';
 import type { MergedLike } from '@/types';
 
 // Inject the flickFadeUp keyframe once. Mirrors discovery-feed-1.html's @keyframes fadeUp.
@@ -205,6 +206,17 @@ export function SearchView() {
 
   const filteredUsers = useMemo(() => remoteUsers.map(mapRemoteUser), [remoteUsers]);
 
+  const getTmdbUrl = (movie: MergedLike) => {
+    if (movie.mediaType === 'tv') {
+      return `${TMDB_TV_BASE_URL}/${movie.Id}`;
+    }
+    return `${TMDB_MOVIE_BASE_URL}/${movie.Id}`;
+  };
+
+  const handleOpenMovie = (movie: MergedLike) => {
+    openMovie(movie.Id, { mediaType: movie.mediaType });
+  };
+
   const showPlaceholder = query.trim().length === 0;
   const noResults =
     !showPlaceholder &&
@@ -379,7 +391,7 @@ export function SearchView() {
                               <MovieListItem
                                 key={movie.Id}
                                 movie={movie}
-                                onClick={() => openMovie(movie.Id)}
+                                onClick={() => handleOpenMovie(movie)}
                               />
                             ))}
                           </div>
@@ -448,7 +460,7 @@ export function SearchView() {
                       <MovieListItem
                         key={movie.Id}
                         movie={movie}
-                        onClick={() => openMovie(movie.Id)}
+                        onClick={() => handleOpenMovie(movie)}
                       />
                     ))}
                   </div>

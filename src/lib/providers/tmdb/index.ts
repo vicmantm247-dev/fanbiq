@@ -196,14 +196,30 @@ export class TmdbProvider implements MediaProvider {
     });
   }
 
-  async getItemDetails(id: string, auth?: AuthContext, _options?: { includeUserState?: boolean }): Promise<MediaItem> {
+  async getItemDetails(id: string, auth?: AuthContext, options?: { includeUserState?: boolean; mediaType?: 'movie' | 'tv' }): Promise<MediaItem> {
     if (auth?.tmdbToken) {
         this.apiKey = auth.tmdbToken;
     }
-    const movie = await this.fetchTmdb<any>(`movie/${id}`, {
-        append_to_response: 'credits,images,watch/providers,release_dates'
-    });
-    return this.mapMovieDetailsToMediaItem(movie, auth?.watchRegion);
+    const requestedMediaType = options?.mediaType;
+    const mediaType = requestedMediaType || 'movie';
+    const path = mediaType === 'tv' ? `tv/${id}` : `movie/${id}`;
+
+    try {
+      const movie = await this.fetchTmdb<any>(path, {
+          append_to_response: 'credits,images,watch/providers,release_dates,content_ratings'
+      });
+      return { ...this.mapMovieDetailsToMediaItem(movie, auth?.watchRegion, mediaType), mediaType };
+    } catch (error) {
+      if (!requestedMediaType && axios.isAxiosError(error) && error.response?.status === 404) {
+        const fallbackType = mediaType === 'movie' ? 'tv' : 'movie';
+        const fallbackPath = fallbackType === 'tv' ? `tv/${id}` : `movie/${id}`;
+        const movie = await this.fetchTmdb<any>(fallbackPath, {
+            append_to_response: 'credits,images,watch/providers,release_dates,content_ratings'
+        });
+        return { ...this.mapMovieDetailsToMediaItem(movie, auth?.watchRegion, fallbackType), mediaType: fallbackType };
+      }
+      throw error;
+    }
   }
 
   async getGenres(auth?: AuthContext): Promise<MediaGenre[]> {
@@ -329,7 +345,7 @@ export class TmdbProvider implements MediaProvider {
     };
   }
 
-  private mapMovieDetailsToMediaItem(movie: any, region?: string): MediaItem {
+  private mapMovieDetailsToMediaItem(movie: any, region?: string, mediaType: 'movie' | 'tv' = 'movie'): MediaItem {
     const people = [
         ...(movie.credits?.cast?.slice(0, 10).map((p: any) => ({
             Id: p.id.toString(),
@@ -348,24 +364,36 @@ export class TmdbProvider implements MediaProvider {
      ];
     
     let officialRating: string | undefined = undefined;
-    const releaseDates = movie.release_dates?.results || [];
     const { tmdbDefaultRegion } = getRuntimeConfig();
     const targetRegion = region || tmdbDefaultRegion;
-    const regionRelease = releaseDates.find((r: any) => r.iso_3166_1 === targetRegion) || releaseDates.find((r: any) => r.iso_3166_1 === tmdbDefaultRegion) || releaseDates[0];
-    
-    if (regionRelease) {
-        officialRating = regionRelease.release_dates.find((rd: any) => rd.certification)?.certification;
+
+    if (mediaType === 'movie') {
+      const releaseDates = movie.release_dates?.results || [];
+      const regionRelease = releaseDates.find((r: any) => r.iso_3166_1 === targetRegion) || releaseDates.find((r: any) => r.iso_3166_1 === tmdbDefaultRegion) || releaseDates[0];
+      if (regionRelease) {
+          officialRating = regionRelease.release_dates.find((rd: any) => rd.certification)?.certification;
+      }
+    } else {
+      const ratingResults = movie.content_ratings?.results || [];
+      const regionRating = ratingResults.find((r: any) => r.iso_3166_1 === targetRegion) || ratingResults.find((r: any) => r.iso_3166_1 === tmdbDefaultRegion) || ratingResults[0];
+      officialRating = regionRating?.rating;
     }
 
     return {
       Id: movie.id.toString(),
-      Name: movie.title,
-      OriginalTitle: movie.original_title,
+      Name: mediaType === 'tv' ? movie.name : movie.title,
+      OriginalTitle: mediaType === 'tv' ? movie.original_name : movie.original_title,
       Overview: movie.overview,
       Language: movie.original_language,
-      ProductionYear: movie.release_date ? new Date(movie.release_date).getFullYear() : undefined,
+      ProductionYear: mediaType === 'tv'
+        ? movie.first_air_date ? new Date(movie.first_air_date).getFullYear() : undefined
+        : movie.release_date ? new Date(movie.release_date).getFullYear() : undefined,
       CommunityRating: movie.vote_average,
-      RunTimeTicks: movie.runtime ? movie.runtime * 60 * 10000000 : undefined,
+      RunTimeTicks: (mediaType === 'tv'
+        ? (Array.isArray(movie.episode_run_time) && movie.episode_run_time.length > 0 ? movie.episode_run_time[0] : movie.runtime)
+        : movie.runtime) ? ((mediaType === 'tv'
+            ? (Array.isArray(movie.episode_run_time) && movie.episode_run_time.length > 0 ? movie.episode_run_time[0] : movie.runtime)
+            : movie.runtime) * 60 * 10000000) : undefined,
       Taglines: movie.tagline ? [movie.tagline] : [],
       OfficialRating: officialRating,
       Genres: movie.genres?.map((g: any) => g.name),

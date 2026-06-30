@@ -4,7 +4,7 @@ import React, { createContext, useContext, useState } from "react";
 import { MovieDetailView } from "./MovieDetailView";
 
 interface MovieDetailContextType {
-  openMovie: (id: string, options?: { showLikedBy?: boolean; sessionCode?: string | null }) => void;
+  openMovie: (id: string, options?: { showLikedBy?: boolean; sessionCode?: string | null; mediaType?: 'movie' | 'tv' }) => void;
   closeMovie: () => void;
 }
 
@@ -14,16 +14,19 @@ export function MovieDetailProvider({ children }: { children: React.ReactNode })
   const [selectedMovieId, setSelectedMovieId] = useState<string | null>(null);
   const [showLikedBy, setShowLikedBy] = useState<boolean | undefined>();
   const [sessionCode, setSessionCode] = useState<string | null | undefined>();
+  const [selectedMovieMediaType, setSelectedMovieMediaType] = useState<'movie' | 'tv' | undefined>(undefined);
 
-  const openMovie = (id: string, options?: { showLikedBy?: boolean; sessionCode?: string | null }) => { 
-    setSelectedMovieId(id); 
+  const openMovie = (id: string, options?: { showLikedBy?: boolean; sessionCode?: string | null; mediaType?: 'movie' | 'tv' }) => {
+    setSelectedMovieId(id);
     setShowLikedBy(options?.showLikedBy);
     setSessionCode(options?.sessionCode);
+    setSelectedMovieMediaType(options?.mediaType);
   }
   const closeMovie = () => { 
     setSelectedMovieId(null); 
     setShowLikedBy(undefined);
     setSessionCode(undefined);
+    setSelectedMovieMediaType(undefined);
   }
 
   return (
@@ -31,6 +34,7 @@ export function MovieDetailProvider({ children }: { children: React.ReactNode })
       {children}
       <MovieDetailView 
         movieId={selectedMovieId} 
+        mediaType={selectedMovieMediaType}
         onClose={closeMovie} 
         showLikedBy={showLikedBy} 
         sessionCode={sessionCode}

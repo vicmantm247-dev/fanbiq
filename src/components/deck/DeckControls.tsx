@@ -62,13 +62,13 @@ export function DeckControls({
       </Button>
       <Button
         size="icon"
-        variant="outline"
-        className="h-18 w-18 rounded-full bg-background border-2 relative"
+        variant="ghost"
+        className="h-18 w-18 rounded-full border border-white/15 bg-white/10 text-white shadow-sm shadow-black/20 transition-colors hover:bg-white/20 relative"
         onClick={onSwipeLeft}
         disabled={isLeftSwipeDisabled}
       >
         <X className="size-9" />
-        {leftSwipesRemaining !== undefined && (
+        {leftSwipesRemaining !== undefined && leftSwipesRemaining > 0 && (
           <Badge variant='secondary' className="rounded-full absolute -top-2 -right-2">
             {leftSwipesRemaining}
           </Badge>
@@ -85,7 +85,7 @@ export function DeckControls({
         ) : (
           <Heart className="size-9 fill-primary-foreground" />
         )}
-        {rightSwipesRemaining !== undefined && (
+        {rightSwipesRemaining !== undefined && rightSwipesRemaining > 0 && (
           <Badge variant='secondary' className="rounded-full absolute -top-2 -right-2">
             {rightSwipesRemaining}
           </Badge>

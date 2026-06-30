@@ -13,6 +13,7 @@ export interface MediaStudio {
 
 export interface MediaItem {
   Id: string;
+  mediaType?: 'movie' | 'tv';
   Guid?: string;
   Name: string;
   OriginalTitle?: string;

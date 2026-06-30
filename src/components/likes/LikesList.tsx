@@ -64,7 +64,7 @@ export function LikesList() {
                     <MovieListItem
                         key={`${movie.Id}-${movie.sessionCode ?? 'solo'}`}
                         movie={movie}
-                        onClick={() => openMovie(movie.Id, { sessionCode: movie.sessionCode })}
+                        onClick={() => openMovie(movie.Id, { sessionCode: movie.sessionCode, mediaType: movie.mediaType })}
                         isLiked={true}
                     />
                 ))}

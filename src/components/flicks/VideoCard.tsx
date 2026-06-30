@@ -14,6 +14,7 @@ import {
   Trash2,
 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Spinner } from "@/components/ui/spinner";
 import { cn } from "@/lib/utils";
 import { CommentsSheet, type Comment } from "@/components/flicks/CommentsSheet";
 import { useMovieDetail } from "@/components/movie/MovieDetailProvider";
@@ -68,6 +69,7 @@ export function VideoCard({ flick, isActive, isFeedActive, profileButtonAction, 
   const [heartBurst, setHeartBurst] = useState(false);
   const [showControls, setShowControls] = useState(false);
   const [isCaptionExpanded, setIsCaptionExpanded] = useState(false);
+  const [isVideoLoading, setIsVideoLoading] = useState(Boolean(flick.videoUrl));
 
   const [commentsOpen, setCommentsOpen] = useState(false);
 
@@ -100,8 +102,17 @@ export function VideoCard({ flick, isActive, isFeedActive, profileButtonAction, 
     if (!video) return;
 
     if (isActive && isFeedActive !== false) {
+      setIsVideoLoading(Boolean(flick.videoUrl));
       const p = video.play();
-      if (p !== undefined) p.then(() => setPlaying(true)).catch(() => setPlaying(false));
+      if (p !== undefined) {
+        p.then(() => {
+          setPlaying(true);
+          setIsVideoLoading(false);
+        }).catch(() => {
+          setPlaying(false);
+          setIsVideoLoading(false);
+        });
+      }
     } else {
       video.pause();
       video.currentTime = 0;
@@ -116,7 +127,7 @@ export function VideoCard({ flick, isActive, isFeedActive, profileButtonAction, 
         cleanupVideo.currentTime = 0;
       }
     };
-  }, [isActive, isFeedActive]);
+  }, [isActive, isFeedActive, flick.videoUrl]);
 
   useEffect(() => {
     const handleVisibilityChange = () => {
@@ -243,7 +254,10 @@ export function VideoCard({ flick, isActive, isFeedActive, profileButtonAction, 
             loop
             playsInline
             preload="auto"
-            poster={flick.posterUrl}
+            onLoadedData={() => setIsVideoLoading(false)}
+            onCanPlay={() => setIsVideoLoading(false)}
+            onWaiting={() => setIsVideoLoading(true)}
+            onError={() => setIsVideoLoading(false)}
           />
         ) : flick.posterUrl ? (
           <img
@@ -253,6 +267,12 @@ export function VideoCard({ flick, isActive, isFeedActive, profileButtonAction, 
           />
         ) : (
           <div className="h-full w-full bg-gradient-to-br from-[#1a0520] via-[#0a1a08] to-[#050508]" />
+        )}
+
+        {flick.videoUrl && isVideoLoading && (
+          <div className="absolute inset-0 flex items-center justify-center bg-black/60 z-10">
+            <Spinner className="size-9 text-white/80" />
+          </div>
         )}
       </div>
 

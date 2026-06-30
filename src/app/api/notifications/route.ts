@@ -14,9 +14,10 @@ export async function GET() {
   }
 
   const data = await NotificationService.listForUser(session.user.Id);
-  return NextResponse.json({ data: data.map((item: { id: number; type: string; actorName: string | null; message: string; createdAt: Date | null; read: boolean; sessionCode: string | null; relatedId: string | null }) => ({
+  return NextResponse.json({ data: data.map((item: { id: number; type: string; actorId: string | null; actorName: string | null; message: string; createdAt: Date | null; read: boolean; sessionCode: string | null; relatedId: string | null }) => ({
     id: item.id,
     type: item.type,
+    actorId: item.actorId,
     actorName: item.actorName,
     message: item.message,
     createdAt: item.createdAt?.toISOString?.() ?? '',

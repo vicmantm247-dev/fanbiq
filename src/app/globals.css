@@ -48,6 +48,9 @@
 }
 
 :root {
+  --font-sans: 'Poppins', 'Inter', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-poppins: 'Poppins', 'Inter', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-inter: 'Inter', 'Poppins', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   --radius: 0.625rem;
   --background: oklch(1 0 0);
   --foreground: oklch(0.145 0 0);
@@ -120,15 +123,24 @@
   * {
     @apply border-border outline-ring/50;
   }
+  html,
+  body {
+    font-family: var(--font-sans) !important;
+  }
   body {
     @apply bg-background text-foreground;
-    /* Use Poppins primary, fall back to Inter and system sans */
-    font-family: 'Poppins', 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, 'Noto Sans', 'Liberation Sans', sans-serif;
+    font-family: var(--font-sans) !important;
     padding-bottom: -env(safe-area-inset-bottom);
   }
 }
 
 @layer utilities {
+  .font-sans {
+    font-family: var(--font-sans) !important;
+  }
+  .font-poppins {
+    font-family: var(--font-poppins) !important;
+  }
   .no-scrollbar::-webkit-scrollbar {
     display: none;
   }

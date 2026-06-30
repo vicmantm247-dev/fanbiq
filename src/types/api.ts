@@ -45,6 +45,7 @@ export interface SessionStatus {
 
 
 export interface MergedLike extends MediaItem {
+  mediaType?: 'movie' | 'tv';
   swipedAt?: string;
   sessionCode?: string | null;
   isMatch?: boolean;

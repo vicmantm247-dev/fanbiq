@@ -82,6 +82,7 @@ export async function GET(request: NextRequest) {
         
         return {
             ...item,
+            mediaType: item.mediaType,
             swipedAt: likeData.createdAt,
             sessionCode: likeData.sessionCode,
             isMatch: likeData.isMatch ?? false,
