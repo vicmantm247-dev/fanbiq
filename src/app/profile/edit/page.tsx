@@ -15,11 +15,28 @@ interface ProfileData {
   username: string;
 }
 
+function validateUsername(username: string) {
+  if (!username || username.length < 3) {
+    return "Username must be at least 3 characters";
+  }
+  if (username.length > 30) {
+    return "Username must be 30 characters or fewer";
+  }
+  if (!/^[a-zA-Z0-9_]+$/.test(username)) {
+    return "Username can only contain letters, numbers, and underscores";
+  }
+  return null;
+}
+
 export default function EditProfilePage() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [profileData, setProfileData] = useState<ProfileData | null>(null);
   const [displayName, setDisplayName] = useState("");
+  const [username, setUsername] = useState("");
+  const [usernameError, setUsernameError] = useState<string | null>(null);
+  const [usernameAvailable, setUsernameAvailable] = useState<boolean | null>(null);
+  const [checkingUsername, setCheckingUsername] = useState(false);
   const [bio, setBio] = useState("");
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
@@ -33,6 +50,7 @@ export default function EditProfilePage() {
         const data = res.data as ProfileData;
         setProfileData(data);
         setDisplayName(data.displayName || data.username);
+        setUsername(data.username);
         setBio(data.bio || "");
         // Fetch current avatar
         if (data.id) {
@@ -44,6 +62,41 @@ export default function EditProfilePage() {
     };
     fetchProfile();
   }, []);
+
+  useEffect(() => {
+    if (!profileData) return;
+
+    const validationError = validateUsername(username);
+    setUsernameError(validationError);
+
+    if (validationError) {
+      setUsernameAvailable(null);
+      return;
+    }
+
+    if (username === profileData.username) {
+      setUsernameAvailable(true);
+      return;
+    }
+
+    const timer = window.setTimeout(async () => {
+      setCheckingUsername(true);
+      try {
+        const response = await apiClient.get<{ available: boolean }>("/api/user/username", {
+          params: { username },
+        });
+        setUsernameAvailable(response.data.available);
+        setUsernameError(response.data.available ? null : "This username is already taken");
+      } catch (error: any) {
+        setUsernameAvailable(null);
+        setUsernameError(error?.response?.data?.error || "Unable to validate username");
+      } finally {
+        setCheckingUsername(false);
+      }
+    }, 300);
+
+    return () => window.clearTimeout(timer);
+  }, [username, profileData]);
 
   const handleAvatarChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -84,6 +137,11 @@ export default function EditProfilePage() {
   }, []);
 
   const handleSave = async () => {
+    if (usernameError || usernameAvailable === false || checkingUsername) {
+      toast.error("Please fix your username before saving.");
+      return;
+    }
+
     setLoading(true);
     const savingToast = toast.loading("Saving changes...");
 
@@ -99,17 +157,19 @@ export default function EditProfilePage() {
       }
 
       // Update profile
+      const currentUsername = profileData?.username || "";
       await apiClient.put("/api/user/profile", {
         displayName: displayName || undefined,
         bio: bio || undefined,
+        username: username !== currentUsername ? username : undefined,
       });
 
       toast.dismiss(savingToast);
       toast.success("Profile updated successfully");
       router.back();
-    } catch (error) {
+    } catch (error: any) {
       toast.dismiss(savingToast);
-      toast.error("Failed to save changes");
+      toast.error(error?.response?.data?.error || error?.message || "Failed to save changes");
     } finally {
       setLoading(false);
     }
@@ -218,13 +278,30 @@ export default function EditProfilePage() {
             </p>
           </div>
 
-          {/* Username (Read-only) */}
+          {/* Username */}
           <div>
             <label className="text-sm font-medium text-foreground mb-2 block">
               Username
             </label>
-            <div className="px-3 py-2 bg-muted border border-border rounded-lg text-muted-foreground">
-              @{profileData.username}
+            <input
+              type="text"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              placeholder="Choose a username"
+              maxLength={30}
+              className="w-full px-3 py-2 bg-muted border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary transition"
+              disabled={loading}
+            />
+            <div className="mt-1 text-xs">
+              {usernameError ? (
+                <span className="text-destructive">{usernameError}</span>
+              ) : username && usernameAvailable ? (
+                <span className="text-emerald-500">Username is available</span>
+              ) : username && checkingUsername ? (
+                <span className="text-muted-foreground">Checking availability…</span>
+              ) : (
+                <span className="text-muted-foreground">Usernames must be 3-30 characters and may contain letters, numbers, and underscores.</span>
+              )}
             </div>
           </div>
         </div>
@@ -239,7 +316,17 @@ export default function EditProfilePage() {
           >
             Cancel
           </Button>
-          <Button onClick={handleSave} className="flex-1" disabled={loading}>
+          <Button
+            onClick={handleSave}
+            className="flex-1"
+            disabled={
+              loading ||
+              !!usernameError ||
+              usernameAvailable === false ||
+              checkingUsername ||
+              !username
+            }
+          >
             {loading ? "Saving..." : "Save Changes"}
           </Button>
         </div>

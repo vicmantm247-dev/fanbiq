@@ -3,13 +3,19 @@ import { getIronSession } from "iron-session";
 import { cookies } from "next/headers";
 import { getSessionOptions } from "@/lib/session";
 import { SessionData } from "@/types";
-import { db, nativeUsers } from "@/lib/db";
-import { eq } from "drizzle-orm";
+import { db, nativeUsers, flicks } from "@/lib/db";
+import { eq, sql } from "drizzle-orm";
 import { z } from "zod";
 
 const updateProfileSchema = z.object({
   displayName: z.string().min(1).max(100).optional(),
   bio: z.string().max(500).optional(),
+  username: z
+    .string()
+    .min(3)
+    .max(30)
+    .regex(/^[a-zA-Z0-9_]+$/)
+    .optional(),
 });
 
 export async function GET(request: NextRequest) {
@@ -74,10 +80,45 @@ export async function PUT(request: NextRequest) {
       updateData.bio = validated.data.bio;
     }
 
+    let oldUsername: string | null = null;
+    if (validated.data.username !== undefined) {
+      const normalizedUsername = validated.data.username.trim();
+      const existingUser = await db
+        .select()
+        .from(nativeUsers)
+        .where(sql`lower(${nativeUsers.username}) = lower(${normalizedUsername})`)
+        .then((rows: typeof nativeUsers.$inferSelect[]) => rows[0]);
+
+      if (existingUser && existingUser.id !== session.user.Id) {
+        return NextResponse.json({ error: "Username is already taken" }, { status: 409 });
+      }
+
+      const currentUser = await db
+        .select({ username: nativeUsers.username })
+        .from(nativeUsers)
+        .where(eq(nativeUsers.id, session.user.Id))
+        .then((rows: Array<{ username: string }>) => rows[0]);
+
+      oldUsername = currentUser?.username ?? null;
+      updateData.username = normalizedUsername;
+      session.user.Name = normalizedUsername;
+    }
+
     await db
       .update(nativeUsers)
       .set(updateData)
       .where(eq(nativeUsers.id, session.user.Id));
+
+    if (oldUsername && validated.data.username !== undefined) {
+      await db
+        .update(flicks)
+        .set({ uploader: validated.data.username.trim() })
+        .where(eq(flicks.uploader, oldUsername));
+    }
+
+    if (validated.data.username !== undefined) {
+      await session.save();
+    }
 
     const updated = await db
       .select({

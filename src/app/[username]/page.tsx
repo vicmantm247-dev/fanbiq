@@ -1,5 +1,5 @@
 import { cookies } from "next/headers";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { getIronSession } from "iron-session";
 import { getSessionOptions } from "@/lib/session";
 import { SessionData } from "@/types";
@@ -25,23 +25,38 @@ interface UserFlick {
 
 export default async function UserPage({ params }: { params: Promise<{ username: string }> }) {
   const { username } = await params;
+  const routeUsername = username;
+  const normalizedUsername = username.trim().toLowerCase();
   const cookieStore = await cookies();
   const session = await getIronSession<SessionData>(cookieStore, await getSessionOptions());
 
-  const isOwner = session?.isLoggedIn && session.user?.Name === username;
-
-  const user = await db
+  let user = await db
     .select()
     .from(nativeUsers)
-    .where(eq(nativeUsers.username, username))
+    .where(sql`lower(${nativeUsers.username}) = ${normalizedUsername}`)
     .then((rows: any[]) => rows[0]);
+
+  if (!user && session?.isLoggedIn && session.user?.Id) {
+    const ownerUser = await db
+      .select()
+      .from(nativeUsers)
+      .where(eq(nativeUsers.id, session.user.Id))
+      .then((rows: any[]) => rows[0]);
+
+    if (ownerUser) {
+      redirect(`/${ownerUser.username}`);
+    }
+  }
+
+  const isOwner = session?.isLoggedIn && session.user?.Id === user?.id;
 
   const uploaderId = user?.id || (isOwner ? session.user?.Id : null);
 
+  const profileUsername = user?.username || routeUsername;
   const flickRows = await db
     .select()
     .from(flicks)
-    .where(eq(flicks.uploader, username))
+    .where(eq(flicks.uploader, profileUsername))
     .orderBy(desc(flicks.createdAt));
 
   if (!user && !isOwner && flickRows.length === 0) {
@@ -57,7 +72,7 @@ export default async function UserPage({ params }: { params: Promise<{ username:
     : null;
 
   const avatarUrl = profile ? `/api/user/profile-picture/${uploaderId}` : undefined;
-  const displayName = user?.displayName || user?.username || username;
+  const initialDisplayName = user?.displayName || user?.username || username;
   const bio = user?.bio;
 
   // Compute followers/following counts and whether current session follows this user
@@ -106,9 +121,12 @@ export default async function UserPage({ params }: { params: Promise<{ username:
     timestamp: formatDistanceToNow(row.createdAt, { addSuffix: true }),
   }));
 
+  const currentUsername = user?.username || normalizedUsername;
+  const displayName = user?.displayName || initialDisplayName;
+
   return (
     <UserProfilePage
-      username={username}
+      username={currentUsername}
       displayName={displayName}
       avatarUrl={avatarUrl}
       isOwner={Boolean(isOwner)}
