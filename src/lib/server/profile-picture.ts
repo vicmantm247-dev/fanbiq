@@ -18,14 +18,9 @@ function buildCloudinarySignature(values: Record<string, string>) {
 }
 
 export async function saveProfilePicture(userId: string, imageBuffer: Buffer, contentType: string) {
-    // Process image: resize to 128x128 and convert to webp
+    // Process image: preserve original quality and orientation
     const processedImage = await sharp(imageBuffer)
         .rotate()
-        .resize(128, 128, {
-            fit: 'cover',
-            position: 'center'
-        })
-        .webp({ quality: 80 })
         .toBuffer();
 
     const updatedAt = new Date();

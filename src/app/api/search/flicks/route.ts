@@ -3,6 +3,7 @@ import { db } from "@/db";
 import { flicks } from "@/db/schema";
 import { desc, sql } from "drizzle-orm";
 import { logger } from "@/lib/logger";
+import { getCloudinaryVideoThumbnailUrl } from "@/lib/cloudinary";
 import { getErrorMessage } from "@/lib/utils";
 
 interface SearchFlickMatch {
@@ -11,7 +12,6 @@ interface SearchFlickMatch {
   uploader: string;
   caption: string | null;
   videoUrl: string;
-  thumbnailUrl: string | null;
   durationSeconds: number | null;
 }
 
@@ -32,7 +32,6 @@ export async function GET(request: NextRequest) {
         uploader: flicks.uploader,
         caption: flicks.caption,
         videoUrl: flicks.videoUrl,
-        thumbnailUrl: flicks.movieBackdropUrl,
         durationSeconds: sql<number | null>`NULL`,
       })
       .from(flicks)
@@ -51,7 +50,7 @@ export async function GET(request: NextRequest) {
         uploader: flick.uploader,
         caption: flick.caption ?? "",
         videoUrl: flick.videoUrl,
-        thumbnailUrl: flick.thumbnailUrl ?? "",
+        thumbnailUrl: getCloudinaryVideoThumbnailUrl(flick.videoUrl) ?? "",
         durationSeconds: null,
       })),
     );

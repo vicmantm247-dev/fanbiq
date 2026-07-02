@@ -23,6 +23,7 @@ export function SwipeVideoFeed({ isActive = true }: SwipeVideoFeedProps) {
 
   const containerRef = useRef<HTMLDivElement>(null);
   const [flicks, setFlicks] = useState<Flick[]>([]);
+  const [followedAuthors, setFollowedAuthors] = useState<Record<string, boolean>>({});
   const [activeIndex, setActiveIndex] = useState(0);
   const [matchedItem, setMatchedItem] = useState<any | null>(null);
   const [page, setPage] = useState(1);
@@ -62,6 +63,19 @@ export function SwipeVideoFeed({ isActive = true }: SwipeVideoFeedProps) {
       setLoading(false);
     }
   }, []);
+
+  useEffect(() => {
+    setFollowedAuthors((prev) => {
+      const next = { ...prev };
+      flicks.forEach((flick) => {
+        if (!flick.uploader) return;
+        if (!(flick.uploader in next)) {
+          next[flick.uploader] = flick.isFollowedByCurrentUser ?? false;
+        }
+      });
+      return next;
+    });
+  }, [flicks]);
 
   useEffect(() => {
     loadFlicks(1);
@@ -218,6 +232,10 @@ export function SwipeVideoFeed({ isActive = true }: SwipeVideoFeedProps) {
                 flick={flick}
                 isActive={activeIndex === index}
                 isFeedActive={isFeedActive}
+                initialIsFollowed={followedAuthors[flick.uploader] ?? false}
+                onFollowStatusChange={(username, isFollowing) => {
+                  setFollowedAuthors((prev) => ({ ...prev, [username]: isFollowing }));
+                }}
               />
             </div>
           ))

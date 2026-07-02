@@ -4,7 +4,7 @@ import { cookies } from "next/headers";
 import { getSessionOptions } from "@/lib/session";
 import { SessionData } from "@/types";
 import { db, nativeUsers, follows } from "@/lib/db";
-import { eq, and } from "drizzle-orm";
+import { eq, and, sql } from "drizzle-orm";
 import { NotificationService } from "@/lib/services/notification-service";
 
 export async function POST(request: NextRequest, context: { params: Promise<{ username: string }> }) {
@@ -17,12 +17,13 @@ export async function POST(request: NextRequest, context: { params: Promise<{ us
 
   try {
     const { username } = await context.params;
+    const normalizedUsername = username.trim().toLowerCase();
 
-    // Get the target user
+    // Get the target user with case-insensitive username matching
     const targetUser = await db
       .select()
       .from(nativeUsers)
-      .where(eq(nativeUsers.username, username))
+      .where(sql`lower(${nativeUsers.username}) = ${normalizedUsername}`)
       .then((rows: Array<{ id: string; username: string; displayName: string | null; bio: string | null; email: string; passwordHash: string; isVerified: boolean; createdAt: Date; updatedAt: Date }>) => rows[0]);
 
     if (!targetUser) {
@@ -33,23 +34,32 @@ export async function POST(request: NextRequest, context: { params: Promise<{ us
       return NextResponse.json({ error: "Cannot follow yourself" }, { status: 400 });
     }
 
-    // Persist follow relation
+    let inserted = false;
     try {
       await db.insert(follows).values({ followerId: session.user.Id, followingId: targetUser.id });
+      inserted = true;
     } catch (err: any) {
-      // If unique constraint violation, ignore
-      // Drizzle/postgres will throw for duplicates; handle gracefully
+      if (err?.code === '23505') {
+        inserted = false;
+      } else {
+        throw err;
+      }
     }
 
-    await NotificationService.create({
-      recipientId: targetUser.id,
-      actorId: session.user.Id,
-      actorName: session.user.Name || session.user.Id,
-      type: 'follow',
-      message: `${session.user.Name || 'Someone'} followed you`,
-    });
+    if (inserted) {
+      await NotificationService.create({
+        recipientId: targetUser.id,
+        actorId: session.user.Id,
+        actorName: session.user.Name || session.user.Id,
+        type: 'follow',
+        message: `${session.user.Name || 'Someone'} followed you`,
+      });
+    }
 
-    return NextResponse.json({ success: true, message: "Followed successfully" });
+    return NextResponse.json({
+      success: true,
+      message: inserted ? "Followed successfully" : "Already following",
+    });
   } catch (error) {
     return NextResponse.json({ error: "Failed to follow user" }, { status: 500 });
   }
@@ -65,24 +75,24 @@ export async function DELETE(request: NextRequest, context: { params: Promise<{ 
 
   try {
     const { username } = await context.params;
+    const normalizedUsername = username.trim().toLowerCase();
 
-    // Get the target user
+    // Get the target user with case-insensitive username matching
     const targetUser = await db
       .select()
       .from(nativeUsers)
-      .where(eq(nativeUsers.username, username))
+      .where(sql`lower(${nativeUsers.username}) = ${normalizedUsername}`)
       .then((rows: Array<{ id: string; username: string; displayName: string | null; bio: string | null; email: string; passwordHash: string; isVerified: boolean; createdAt: Date; updatedAt: Date }>) => rows[0]);
 
     if (!targetUser) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
-    // Remove follow relation if exists
-    try {
-      await db.delete(follows).where(and(eq(follows.followerId, session.user.Id), eq(follows.followingId, targetUser.id)));
-    } catch (err: any) {
-      // ignore
+    if (targetUser.id === session.user.Id) {
+      return NextResponse.json({ error: "Cannot unfollow yourself" }, { status: 400 });
     }
+
+    await db.delete(follows).where(and(eq(follows.followerId, session.user.Id), eq(follows.followingId, targetUser.id)));
 
     return NextResponse.json({ success: true, message: "Unfollowed successfully" });
   } catch (error) {

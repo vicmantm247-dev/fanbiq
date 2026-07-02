@@ -1,10 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { desc, sql, arrayContains, eq } from 'drizzle-orm';
+import { desc, sql, arrayContains, eq, inArray } from 'drizzle-orm';
 import { formatDistanceToNow } from 'date-fns';
+import { getIronSession } from 'iron-session';
+import { cookies } from 'next/headers';
+import { getSessionOptions } from '@/lib/session';
+import { SessionData } from '@/types';
 import { db } from '@/db';
-import { flicks, type FlickRow, nativeUsers, userProfiles } from '@/db/schema';
+import { flicks, type FlickRow, nativeUsers, follows } from '@/db/schema';
 
 export async function GET(request: NextRequest) {
+    const cookieStore = await cookies();
+    const session = await getIronSession<SessionData>(cookieStore, await getSessionOptions());
+    const currentUserId = session?.isLoggedIn && session.user?.Id ? session.user.Id : null;
   try {
     const { searchParams } = request.nextUrl;
     const page = Number(searchParams.get('page') ?? '1');
@@ -29,6 +36,21 @@ export async function GET(request: NextRequest) {
       ? await baseQuery.where(arrayContains(flicks.tags, [tag]))
       : await baseQuery;
 
+    const uploaderIds = Array.from(
+      new Set(rows.map((row: { flick: FlickRow; userId: string | null }) => row.userId).filter(Boolean))
+    ) as string[];
+
+    const followedIds = currentUserId && uploaderIds.length
+      ? new Set(
+          (
+            await db
+              .select({ followingId: follows.followingId })
+              .from(follows)
+              .where(eq(follows.followerId, currentUserId), inArray(follows.followingId, uploaderIds))
+          ).map((row: any) => row.followingId)
+        )
+      : new Set<string>();
+
     const [{ count }] = await db
       .select({ count: sql<number>`count(*)` })
       .from(flicks);
@@ -38,7 +60,8 @@ export async function GET(request: NextRequest) {
       const userId = row.userId;
       // Build the avatar URL using the actual user ID
       const uploaderAvatarUrl = userId ? `/api/user/profile-picture/${userId}` : '';
-      
+      const isFollowedByCurrentUser = userId ? followedIds.has(userId) : false;
+
       return {
         id: row_data.id,
         movieId: row_data.tmdbId ? String(row_data.tmdbId) : undefined,
@@ -56,6 +79,7 @@ export async function GET(request: NextRequest) {
         likes: row_data.likes,
         comments: row_data.comments,
         timestamp: formatDistanceToNow(row_data.createdAt, { addSuffix: true }),
+        isFollowedByCurrentUser,
       };
     });
 

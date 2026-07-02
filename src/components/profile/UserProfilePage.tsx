@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, Search, MoreVertical, Edit2, Share2, Loader2, BadgeCheck } from "lucide-react";
+import { ChevronLeft, Search, MoreVertical, Edit2, ArrowUpRight, Loader2, BadgeCheck, User } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -25,6 +25,7 @@ interface UserFlick {
   uploaderAvatarUrl?: string;
   caption: string;
   likes: number;
+  views?: number;
   comments: number;
   timestamp: string;
 }
@@ -82,6 +83,7 @@ function FlickCard({ flick, index }: FlickCardProps) {
         caption: flick.caption,
         uploader: flick.uploader,
         likes: flick.likes,
+        views: flick.views,
       }}
       index={index}
       animationDelay={40 + index * 60}
@@ -113,6 +115,49 @@ export default function UserProfilePage({
   const [flicksLoading, setFlicksLoading] = useState(false);
   const [followersNum, setFollowersNum] = useState<number>(followersCount ?? 0);
   const [followingNum, setFollowingNum] = useState<number>(followingCount ?? 0);
+
+  useEffect(() => {
+    setFollowersNum(followersCount ?? 0);
+    setFollowingNum(followingCount ?? 0);
+  }, [followersCount, followingCount]);
+
+  useEffect(() => {
+    setFollowing(isFollowing);
+  }, [isFollowing]);
+
+  useEffect(() => {
+    if (isOwner) {
+      setFollowing(false);
+      return;
+    }
+
+    let active = true;
+    const controller = new AbortController();
+
+    async function fetchFollowStatus() {
+      try {
+        const response = await fetch(
+          `/api/user/${encodeURIComponent(username)}/follow/status`,
+          { signal: controller.signal }
+        );
+        if (!response.ok) return;
+        const data = await response.json();
+        if (!active) return;
+        if (typeof data?.isFollowing === "boolean") {
+          setFollowing(data.isFollowing);
+        }
+      } catch (error) {
+        // ignore abort and network errors, keep existing state
+      }
+    }
+
+    fetchFollowStatus();
+
+    return () => {
+      active = false;
+      controller.abort();
+    };
+  }, [username, isOwner]);
 
   const visibleFlicks = activeTab === "flicks" ? initialFlicks : [...initialFlicks].reverse();
 
@@ -154,16 +199,16 @@ export default function UserProfilePage({
       <div className="h-screen overflow-y-auto bg-background overscroll-contain">
         {/* Top Nav */}
         <div className="flex items-center justify-between px-4 py-2 bg-background">
-          <Button variant="ghost" size="icon">
-            <ArrowLeft className="w-5 h-5" />
-          </Button>
-          <div className="flex items-center gap-1">
-            <Button variant="ghost" size="icon">
-              <Search className="w-5 h-5" />
+            <Button variant="ghost" size="icon" className="p-3">
+              <ChevronLeft className="w-6 h-6" />
             </Button>
-            <Button variant="ghost" size="icon">
-              <MoreVertical className="w-5 h-5" />
-            </Button>
+            <div className="flex items-center gap-1">
+              <Button variant="ghost" size="icon" className="p-3">
+                <Search className="w-6 h-6" />
+              </Button>
+              <Button variant="ghost" size="icon" className="p-3">
+                <MoreVertical className="w-6 h-6" />
+                </Button>
           </div>
         </div>
 
@@ -175,7 +220,7 @@ export default function UserProfilePage({
               <Avatar className="w-22 h-22 border-2 border-background">
                 <AvatarImage src={avatarUrl} alt={displayName} />
                 <AvatarFallback className="text-lg font-bold">
-                  {displayName.charAt(0).toUpperCase()}
+                  {!avatarUrl ? <User className="size-6" /> : displayName.charAt(0).toUpperCase()}
                 </AvatarFallback>
               </Avatar>
             </div>
@@ -220,7 +265,7 @@ export default function UserProfilePage({
                   </Button>
                 </Link>
                 <Button variant="outline" size="icon">
-                  <Share2 className="w-4 h-4" />
+                  <ArrowUpRight className="w-4 h-4" />
                 </Button>
               </>
             ) : (
@@ -242,7 +287,7 @@ export default function UserProfilePage({
                   )}
                 </Button>
                 <Button variant="outline" size="icon">
-                  <Share2 className="w-4 h-4" />
+                  <ArrowUpRight className="w-4 h-4" />
                 </Button>
               </>
             )}

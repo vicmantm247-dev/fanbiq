@@ -142,6 +142,7 @@ export async function POST(request: NextRequest) {
       videoUrl = `/uploads/flicks/${filename}`;
     }
 
+
     const uploaderName = session?.user?.Name || 'anonymous';
 
     const [saved] = await db.insert(flicks).values({
@@ -150,7 +151,6 @@ export async function POST(request: NextRequest) {
       movieTitle,
       movieYear: parseInt(movieYear, 10),
       tmdbId: tmdbId ? parseInt(tmdbId, 10) : null,
-      moviePosterUrl: moviePosterUrl || '',
       movieBackdropUrl: movieBackdropUrl || '',
       uploader: uploaderName,
       caption: description || '',
@@ -166,7 +166,6 @@ export async function POST(request: NextRequest) {
       movieTitle: saved.movieTitle,
       movieYear: saved.movieYear,
       tmdbId: saved.tmdbId,
-      moviePosterUrl: saved.moviePosterUrl,
       movieBackdropUrl: saved.movieBackdropUrl,
       uploader: saved.uploader,
       caption: saved.caption,

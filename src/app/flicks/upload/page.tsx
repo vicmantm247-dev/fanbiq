@@ -143,6 +143,7 @@ export default function FlicksUploadPage() {
     }
   };
 
+
   const selectTmdbResult = (result: TmdbResult) => {
     setTmdbSearch('');
     setTmdbResults([]);
@@ -353,6 +354,7 @@ export default function FlicksUploadPage() {
                         className="w-full max-h-48 object-cover"
                       />
                     </div>
+
 
                     {/* File Info */}
                     <div className="space-y-2 p-3 bg-muted rounded-lg">

@@ -19,6 +19,7 @@ import { cn } from "@/lib/utils";
 import { CommentsSheet, type Comment } from "@/components/flicks/CommentsSheet";
 import { useMovieDetail } from "@/components/movie/MovieDetailProvider";
 import { useSwipe } from "@/hooks/api/use-swipe";
+import { useFollowUser } from "@/hooks/api/use-follow-user";
 import { useLikes, useSession } from "@/hooks/api";
 import { toast } from "sonner";
 
@@ -37,12 +38,15 @@ export interface Flick {
   likes: number;
   comments: number;
   timestamp: string;
+  isFollowedByCurrentUser?: boolean;
 }
 
 interface VideoCardProps {
   flick: Flick;
   isActive: boolean;
   isFeedActive?: boolean;
+  initialIsFollowed?: boolean;
+  onFollowStatusChange?: (username: string, isFollowing: boolean) => void;
   profileButtonAction?: {
     label: string;
     onClick: (event: MouseEvent<HTMLButtonElement>) => void;
@@ -56,12 +60,12 @@ function formatCount(n: number): string {
   return String(n);
 }
 
-export function VideoCard({ flick, isActive, isFeedActive, profileButtonAction, hideProfileButton, onDelete }: VideoCardProps) {
+export function VideoCard({ flick, isActive, isFeedActive, initialIsFollowed = false, onFollowStatusChange, profileButtonAction, hideProfileButton, onDelete }: VideoCardProps) {
   const router = useRouter();
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const [liked, setLiked] = useState(false);
   const [playing, setPlaying] = useState(false);
-  const [followed, setFollowed] = useState(false);
+  const [followed, setFollowed] = useState(initialIsFollowed);
   const [saved, setSaved] = useState(false);
   const [inWatchlist, setInWatchlist] = useState(false);
   const [commentsActive, setCommentsActive] = useState(false);
@@ -77,6 +81,11 @@ export function VideoCard({ flick, isActive, isFeedActive, profileButtonAction, 
   const { mutateAsync: addToLikes } = useSwipe();
   const { data: likes } = useLikes();
   const { data: session } = useSession();
+  const followMutation = useFollowUser(flick.uploader);
+
+  useEffect(() => {
+    setFollowed(initialIsFollowed);
+  }, [initialIsFollowed]);
 
   useEffect(() => {
     const itemId = flick.movieId ?? flick.id;
@@ -349,9 +358,18 @@ export function VideoCard({ flick, isActive, isFeedActive, profileButtonAction, 
               <button
                 onClick={(e) => {
                   e.stopPropagation();
-                  setFollowed(true);
+                  const nextState = !followed;
+                  setFollowed(nextState);
+                  onFollowStatusChange?.(flick.uploader, nextState);
+                  followMutation.mutate(followed, {
+                    onError: () => {
+                      setFollowed(!nextState);
+                      onFollowStatusChange?.(flick.uploader, !nextState);
+                    },
+                  });
                 }}
-                className="shrink-0 ml-2 rounded-full px-3 py-1 text-[11px] font-semibold bg-white text-black transition-opacity active:opacity-70"
+                disabled={followMutation.isPending}
+                className="shrink-0 ml-2 rounded-full px-3 py-1 text-[11px] font-semibold bg-white text-black transition-opacity active:opacity-70 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 + Follow
               </button>

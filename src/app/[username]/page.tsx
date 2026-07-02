@@ -36,18 +36,6 @@ export default async function UserPage({ params }: { params: Promise<{ username:
     .where(sql`lower(${nativeUsers.username}) = ${normalizedUsername}`)
     .then((rows: any[]) => rows[0]);
 
-  if (!user && session?.isLoggedIn && session.user?.Id) {
-    const ownerUser = await db
-      .select()
-      .from(nativeUsers)
-      .where(eq(nativeUsers.id, session.user.Id))
-      .then((rows: any[]) => rows[0]);
-
-    if (ownerUser) {
-      redirect(`/${ownerUser.username}`);
-    }
-  }
-
   const isOwner = session?.isLoggedIn && session.user?.Id === user?.id;
 
   const uploaderId = user?.id || (isOwner ? session.user?.Id : null);
@@ -117,6 +105,7 @@ export default async function UserPage({ params }: { params: Promise<{ username:
     uploaderAvatarUrl: avatarUrl,
     caption: row.caption,
     likes: row.likes,
+    views: row.views,
     comments: row.comments,
     timestamp: formatDistanceToNow(row.createdAt, { addSuffix: true }),
   }));
@@ -126,6 +115,7 @@ export default async function UserPage({ params }: { params: Promise<{ username:
 
   return (
     <UserProfilePage
+      key={currentUsername}
       username={currentUsername}
       displayName={displayName}
       avatarUrl={avatarUrl}

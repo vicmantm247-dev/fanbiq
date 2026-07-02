@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { Heart, Scissors } from 'lucide-react';
+import { Eye, Heart, Scissors } from 'lucide-react';
 
 export interface FlickPreviewCardData {
   id: string;
@@ -14,6 +14,7 @@ export interface FlickPreviewCardData {
   caption?: string;
   uploader?: string;
   likes?: number;
+  views?: number;
 }
 
 function formatCount(value: number): string {
@@ -94,10 +95,11 @@ export function FlickPreviewCard({
             className="w-full block object-cover"
           />
 
-          {typeof flick.likes === 'number' && (
-            <div className="absolute bottom-2 left-2 flex items-center gap-1 bg-black/50 rounded-full px-2 py-0.5">
-              <Scissors className="w-3 h-3 text-white" />
-              <span className="text-xs font-semibold text-white">{formatCount(flick.likes)}</span>
+
+          {typeof flick.views === 'number' && (
+            <div className="absolute bottom-2 right-2 flex items-center gap-1 bg-black/50 rounded-full px-2 py-0.5">
+              <Eye className="w-3 h-3 text-white" />
+              <span className="text-xs font-semibold text-white">{formatCount(flick.views)}</span>
             </div>
           )}
 
