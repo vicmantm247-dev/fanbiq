@@ -33,7 +33,7 @@ export async function generateMetadata({ params }: FlickDetailPageProps): Promis
     };
   }
 
-  const title = flick.flick.movieTitle || 'fanbIQ Flick';
+  const title = flick.flick.movieTitle?.trim() || 'fanbIQ Flick';
   const description = flick.flick.caption?.trim() || `A flick shared by ${flick.flick.uploader}`;
   const rawImage = getCloudinaryVideoThumbnailUrl(flick.flick.videoUrl) || flick.flick.movieBackdropUrl || '';
   const imageUrl = rawImage
@@ -49,8 +49,9 @@ export async function generateMetadata({ params }: FlickDetailPageProps): Promis
       title,
       description,
       url: pageUrl.toString(),
-      images: [{ url: imageUrl, width: 1200, height: 630 }],
+      images: [{ url: imageUrl, width: 1200, height: 630, alt: title }],
       type: 'article',
+      siteName: 'fanbIQ',
     },
     twitter: {
       card: 'summary_large_image',
