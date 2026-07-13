@@ -1,8 +1,8 @@
-export const GITHUB_REPO = "m3sserstudi0s/swiparr";
+export const GITHUB_REPO = "vicmantm247-dev/fanbiq";
 export const GITHUB_API_URL = `https://api.github.com/repos/${GITHUB_REPO}`;
 export const GITHUB_URL = `https://github.com/${GITHUB_REPO}`;
-export const SUPPORT_URL = "https://buymeacoffee.com/jakobbjelver";
-export const MESSER_STUDIOS_URL = "https://messerstudios.dev";
+export const SUPPORT_URL = "https://myhappr.com/vicman";
+export const MESSER_STUDIOS_URL = "https://vicman.dev";
 
 export const DEFAULT_THEMES = ["Christmas", "Halloween", "Zombie", "Superhero", "Time Travel", "Aliens", "Dystopia", "Cyberpunk", "Space", "Based on Video Game"]
 
