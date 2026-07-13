@@ -1,562 +1,341 @@
 <p align="center">
-  <img src="https://github.com/user-attachments/assets/7803607a-e4e7-4824-81a3-8e2df132fc03" alt="Swiparr" width="300" />
+  <img src="https://github.com/user-attachments/assets/7803607a-e4e7-4824-81a3-8e2df132fc03" alt="fanbIQ" width="300" />
 </p>
 
-<h1 align="center">Swiparr 🍿</h1>
+<h1 align="center">fanbIQ 🍿</h1>
 
 <p align="center">
-  <strong>Discover what to watch next, by yourself or together.</strong>
-</p>
-
-<p align="center">
-  Swiparr turns the dreaded "what should we watch?" question into a fun, collaborative experience. 
-  <br>
-  Like Tinder for movies, but smarter and works for groups.
+  <strong>Swipe on what to watch next, by yourself or together.</strong>
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/github/license/m3sserstudi0s/swiparr" alt="License" />
-  <img src="https://img.shields.io/badge/docker-ghcr.io-blue" alt="Docker" />
-  <a href="https://www.buymeacoffee.com/jakobbjelver" target="_blank">
-    <img src="https://img.shields.io/badge/Buy%20Me%20a%20Coffee-ffdd00?style=flat&logo=buy-me-a-coffee&logoColor=black" alt="Buy Me a Coffee" />
-  </a>
+  fanbIQ is a mobile-first media discovery app for browsing content from Jellyfin, Emby, Plex, or TMDB, then swiping through a Tinder-style deck, saving favorites, and creating shared sessions.
+</p>
+
+<p align="center">
+  <img src="https://img.shields.io/github/license/fanbiq/fanbiq" alt="License" />
+  <img src="https://img.shields.io/badge/next.js-16-blue" alt="Next.js" />
+  <img src="https://img.shields.io/badge/react-19-blue" alt="React" />
 </p>
 
 ---
 
-## 🎯 The Problem
+## The problem fanbIQ solves
 
-The struggle is real: 30 minutes of "what should we watch?" that ends with watching the same show again. Swiparr fixes this by:
+Choosing what to watch can become a slow, repetitive decision-making process. People often spend too much time browsing, get stuck reusing the same titles, or struggle to agree in a group.
 
-✨ Turning discovery into a fun, game-like experience  
-🤝 Finding content everyone actually wants to watch  
-⚡ Making group decisions in minutes, not hours  
-🌍 Working with your existing media libraries OR standalone  
+fanbIQ addresses that by making discovery feel faster and more intriguing:
 
----
-
-## ✨ Features
-
-### 🎬 Content Discovery
-- **Intuitive Swipe Interface** - Browse movies with a familiar card-based design
-- **Multi-Provider Support** - Works with Jellyfin, Emby, Plex, or TMDB directly
-- **Smart Matching** - Automatically finds content everyone in your group will enjoy
-- **Mobile-First** - Optimized for phones, with desktop keyboard shortcuts
-- **PWA Ready** - Install as a web app for the best experience
-
-### 👥 Built for Groups
-- **Instant Sessions** - Create or join in seconds, no complex setup
-- **Flexible Match Rules** - Choose "any two people" or "everyone must agree"
-- **Session Controls** - Limit likes, dislikes, or total matches
-- **Watchlist Sync** - Seamlessly save favorites back to your media server
-
-### 🔧 Universal Compatibility
-- **Jellyfin** - Full native integration
-- **Emby** - Experimental support (improving)  
-- **Plex** - Experimental support (improving)
-- **TMDB** - No media server required, works standalone
+- It turns media discovery into a swipe-based experience instead of a long list of options.
+- It helps people make decisions quickly, whether they are browsing solo or with others.
+- It keeps the experience grounded in the media libraries and services users already use.
+- It supports both standalone browsing and shared session-based discovery.
 
 ---
 
-## 🚀 Quick Start
+## Features
 
-### Fastest: Swiparr Global
+### Discovery and browsing
+- Swipe-based video feed for quickly browsing movies and shows
+- Detailed media views with metadata and provider-aware information
+- Filtering by genre, year, rating, library, and watch provider
+- Support for TMDB-backed browsing without requiring a local media server
 
-**No setup, no server, no problem.**
+### Personal and shared watching
+- Save liked titles to a dedicated likes experience
+- Create or join collaborative sessions for group decision-making
+- Use matching rules and session controls to guide group choices
+- Enable guest participation for temporary joining without a full account
 
-🌐 **[swiparr.com](https://swiparr.com)** - Free to use, community-supported (hopefully)
+### Authentication and provider support
+- Native email/password sign-in
+- Provider-specific behavior for libraries, watchlist/favorites, and server settings
 
-### Easiest: Deploy to Vercel
+### Product and platform experience
+- Mobile-friendly interface with touch-friendly interactions
+- Profile, follow, and flick upload/sharing features
+- Admin-style provider settings and configuration workflows
+- Self-hostable deployment for running the app on your own infrastructure
 
-One-click deployment, perfect for personal or small group use:
+---
 
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fm3sserstudi0s%2Fswiparr&env=PROVIDER,TMDB_ACCESS_TOKEN,USE_SECURE_COOKIES,PROVIDER_LOCK&envDefaults=%7B%22PROVIDER%22%3A%22tmdb%22%2C%22USE_SECURE_COOKIES%22%3A%22true%22%2C%22PROVIDER_LOCK%22%3A%22true%22%7D&envDescription=Get%20a%20TMDB%20Access%20Token%20to%20continue%20with%20TMDB%20(no%20media%20server%20needed)%2C%20or%20set%20another%20PROVIDER%20(jellyfin%2C%20plex%2C%20emby)%2C%20or%20set%20PROVIDER_LOCK%20to%20%22false%22%20to%20configure%20the%20provider%20(any)%20at%20run-time.&envLink=https%3A%2F%2Fgithub.com%2Fm3sserstudi0s%2Fswiparr%3Ftab%3Dreadme-ov-file%23environment-variable-matrix&project-name=swiparr&repository-name=swiparr&demo-title=Swiparr&demo-description=Discover%20what%20to%20watch%20next%2C%20by%20yourself%20or%20together.&demo-url=https%3A%2F%2Fswiparr.com&demo-image=https%3A%2F%2Fswiparr.com%2Ficon1.png&products=%5B%7B%22type%22%3A%22integration%22%2C%22integrationSlug%22%3A%22tursocloud%22%2C%22productSlug%22%3A%22database%22%2C%22protocol%22%3A%22storage%22%2C%22group%22%3A%22%22%7D%5D)
+## Overview
 
-Note: The automatic deployment workflow in Vercel uses the Turso integration by default as a database service provider. Free to set up, possible to swap out [^1].
+fanbIQ is a self-hostable media discovery experience that makes choosing something to watch feel faster and more playful. The app combines a swipe-based card deck with provider integrations, session-based matching, and optional account features so you can browse your own library or use TMDB as a standalone source.
 
-**Vercel security note:** `AUTH_SECRET` is auto-generated during the build (via `scripts/ensure-auth-secret.cjs`) and persisted in the database when not provided.
+The experience is designed around three main flows:
 
+1. Browse and swipe through titles from a connected provider.
+2. Save likes and revisit them from the likes view.
+3. Create or join a session to decide together with other people.
 
+---
 
-### Full Control: Self-Host with Docker
+## What fanbIQ does
 
-**Using Docker Compose (Recommended):**
+### Core experience
+- Swipe right to like, left to pass, and undo recent actions.
+- Open details for synopsis, metadata, and provider-specific info.
+- Filter by genre, year, rating, library, and streaming availability.
+- Save liked titles into a dedicated likes view.
+- Create or join a shareable session code for group decisions.
+- Use the app with Jellyfin, Emby, Plex, or TMDB as the media source.
 
-1. Create `docker-compose.yml`:
+### Product areas in the current codebase
+- Home swipe feed and likes experience
+- Search and media detail views
+- Session-based discovery for group use
+- Guest joining for temporary participation
+- Native email/password authentication and provider-backed sign-in
+- Profile, follow, and flick upload/sharing features
+- Admin-style provider and settings workflows
 
-```yaml
-services:
-  swiparr:
-    image: ghcr.io/m3sserstudi0s/swiparr:latest
-    container_name: swiparr
-    restart: unless-stopped
-    environment:
-      - PROVIDER=jellyfin  # or plex, emby, tmdb (or set PROVIDER_LOCK to "false")
-      - JELLYFIN_URL=http://your-jellyfin:8096 # adjust to provider, none without server lock
-    volumes:
-      - ./swiparr-data:/app/data
-    ports:
-      - 4321:4321
-```
+---
 
-2. Run it:
+## Supported providers
+
+fanbIQ supports multiple backends through a provider abstraction layer in the app.
+
+| Provider | Best for | Notes |
+| --- | --- | --- |
+| Jellyfin | Self-hosted media libraries | Full local integration, watchlist/favorites support, quick connect, admin features |
+| Emby | Self-hosted media libraries | Supported, with admin-style settings and watchlist/favorites support |
+| Plex | Self-hosted media libraries | Supported with server URL setup, quick connect, and watchlist/favorites support |
+| TMDB | Standalone discovery | No local media server required; useful for browsing and discovery without provider auth |
+| Native | TMDB-backed standalone mode | Uses native auth and a TMDB-backed flow for discovery |
+
+### Provider capabilities
+- Jellyfin, Emby, and Plex support authentication, libraries, watchlist/favorites, and server-based settings.
+- TMDB supports streaming-related settings and discovery without a media server.
+- Native mode is built around TMDB-backed media discovery and native account auth.
+
+---
+
+## How the app works
+
+### 1. Connect a provider
+Users can sign in with a provider-backed account or use the native flow. If provider lock is enabled, the app uses the configured backend for everyone; if not, users can supply their own connection settings during login.
+
+### 2. Browse and filter
+The main deck surfaces titles from the active provider. Users can refine results by category, rating, year, library, watch provider, and region.
+
+### 3. Swipe and save
+Likes are collected in the app and surfaced in the likes experience. The media detail view can also expose extra provider data and watchlist/favorites actions when supported.
+
+### 4. Create or join a session
+A session lets multiple users make decisions together. The host can create a session using a session code, and other participants can join with that code. The app supports configurable matching rules and session limits.
+
+### 5. Guest participation
+Guest access can be enabled for a session so people without accounts can join temporarily and participate in the swipe flow without accessing the host account or full account settings.
+
+---
+
+## Sessions and group discovery
+
+fanbIQ includes a session system for collaborative decision-making.
+
+### Session features
+- Create a session and share the generated code
+- Join a session with a code
+- Use different matching logic for group decisions
+- Apply session limits for likes, matches, or other constraints
+- Enable guest lending so non-account users can join temporarily
+- Use the matches view to select a final recommendation from current matches
+
+### Matching modes
+- Unanimous: every participant must swipe right for a title to count as a match
+- Majority: two or more participants can agree for a match
+
+### Session controls
+The current app supports host-side controls for session behavior, including guest lending and session settings that influence how the group experience works.
+
+---
+
+## Authentication and access
+
+fanbIQ supports several access patterns:
+
+- Native auth: email/password sign-in with local account support
+- Provider auth: sign in directly against Jellyfin, Emby, Plex, or TMDB-backed flows
+- Quick Connect: supported for Jellyfin and Plex where available
+- Guest access: join a session without a full account
+
+### Quick Connect and PIN flows
+The login UI includes support for:
+- Jellyfin Quick Connect
+- Plex PIN-based sign-in
+
+These flows are useful when the provider requires a second-step approval or device-based authentication.
+
+---
+
+## Features at a glance
+
+### Discovery
+- Swipe-based media deck
+- Media detail view
+- Search and filter tools
+- Stream availability-aware browsing where supported
+- Watchlist/favorites integration for compatible providers
+
+### Social and personal experience
+- Likes list
+- Profile and follow support
+- Flick upload and sharing
+- Session-based collaborative discovery
+
+### Admin and configuration
+- Provider configuration and admin-facing settings
+- Session settings and guest lending controls
+- Provider-specific behavior depending on the active backend
+
+---
+
+## Tech stack
+
+This repository is a Next.js 16 application built with React 19, Tailwind CSS, Framer Motion, Drizzle ORM, and Zustand/TanStack Query.
+
+- Frontend: Next.js App Router, React 19, Tailwind CSS, Framer Motion
+- State/data: Zustand, TanStack Query, Drizzle ORM
+- Auth: iron-session with native and provider-based sign-in flows
+- Media providers: Jellyfin, Emby, Plex, TMDB
+- Database: PostgreSQL-compatible URLs and SQLite-compatible local storage patterns
+
+The code is organized around the app router in the src/app tree, reusable UI in src/components, provider integrations in src/lib/providers, and server-side services in src/lib/services.
+
+---
+
+## Quick start
+
+### Prerequisites
+- Node.js 24+
+- npm
+
+### Local development
+
 ```bash
-docker compose up -d
+git clone https://github.com/fanbiq/fanbiq.git
+cd fanbiq
+npm install
+npm run dev
 ```
 
-**Using Docker CLI:**
+Then open http://localhost:3000.
+
+### Production build
 
 ```bash
-docker run -d \
-  --name swiparr \
-  --restart unless-stopped \
-  -p 4321:4321 \
-  -v $(pwd)/swiparr-data:/app/data \
-  -e PROVIDER=jellyfin \
-  -e JELLYFIN_URL=http://your-jellyfin:8096 \
-  ghcr.io/m3sserstudi0s/swiparr:latest
+npm run build
+npm run start
 ```
 
-3. Open [http://localhost:4321](http://localhost:4321)
-
-**Docker security note:** `AUTH_SECRET` is auto-generated on first boot (via `scripts/ensure-auth-secret.cjs`) and stored in the database when not provided.
+The production server defaults to port 4321 in the Docker image, while local development uses the Next.js default port.
 
 ---
 
-## ⚙️ Configuration Reference
+## Configuration
 
-### Provider-Specific Settings
-
-Choose **one** provider setup based on your needs:
-
-<details>
-<summary><strong>Jellyfin Setup</strong></summary>
+fanbIQ reads most behavior from environment variables. The most important ones are:
 
 ```env
 PROVIDER=jellyfin
-JELLYFIN_URL=http://your-jellyfin:8096              # Internal URL (required)
-JELLYFIN_PUBLIC_URL=https://jellyfin.example.com    # Public URL (optional)
-JELLYFIN_USE_WATCHLIST=false                         # Use Watchlist (plugin needed) vs Favorites (optional)
-```
-</details>
-
-<details>
-<summary><strong>Emby Setup (Experimental)</strong></summary>
-
-```env
-PROVIDER=emby
-EMBY_URL=http://your-emby:8096        # Internal URL (required)
-EMBY_PUBLIC_URL=https://emby.example.com  # Public URL (optional)
-```
-</details>
-
-<details>
-<summary><strong>Plex Setup (Experimental)</strong></summary>
-
-```env
-PROVIDER=plex
-PLEX_URL=http://your-plex:32400       # Internal URL (required)
-PLEX_PUBLIC_URL=https://plex.example.com # Public URL (optional)
-```
-</details>
-
-<details>
-  <summary><strong>TMDB Setup (No Server Required)</strong></summary>
-
-```env
-PROVIDER=tmdb
-TMDB_ACCESS_TOKEN=your-tmdb-token     # API Read-Only Token (required)
-TMDB_DEFAULT_REGION=SE                # Default region for availability/certifications (optional)
-```
-</details>
-
-### Security & Advanced Options
-
-```env
-# Authentication
-AUTH_SECRET=random-string-32-chars-min     # Auto-generated on boot/build when not provided. See Security & Privacy.
-USE_SECURE_COOKIES=true                    # Required for HTTPS
-
-# Application
-PORT=4321                                  # Default port
-HOSTNAME=0.0.0.0                          # Bind address
-DATABASE_URL=file:/app/data/swiparr.db    # SQLite path or Turso URL
-DATABASE_AUTH_TOKEN=your-token            # Required for Turso/Remote DB
-
-# Base path (build-time only — see Custom Base Path section)
-# URL_BASE_PATH=/swipe
-
-# Admin
-ADMIN_USERNAME=your-username                      # Global auto-grant admin privileges
-JELLYFIN_ADMIN_USERNAME=jelly-admin               # Provider-specific admin (overrides global)
-PLEX_ADMIN_USERNAME=plex-admin                   # Provider-specific admin (overrides global)
-EMBY_ADMIN_USERNAME=emby-admin                   # Provider-specific admin (overrides global)
-
-# Security Headers
-X_FRAME_OPTIONS=DENY                       # Frame control
-CSP_FRAME_ANCESTORS=none                   # Embedding policy
-
-# Network Safety
-ALLOW_PRIVATE_PROVIDER_URLS=false          # Block private/LAN URLs for user-supplied providers (BYOP)
-PLEX_IMAGE_ALLOWED_HOSTS=plex.example.com,*.plex.direct  # Optional extra image hosts
-
-# BYOP Mode - Bring Your Own Provider
-PROVIDER_LOCK=false                          # Let users choose and configure their own provider
-
-# Misc
-USE_ANALYTICS=false                          # Enable anonymous usage analytics (Vercel deployments)
-ENABLE_DEBUG=false                           # Enable verbose debug logging and client-server error mapping
-USE_STATIC_FILTERS=false                     # Skip dynamic filter fetching; use built-in genre/year/rating lists instead (useful for very large libraries where filter API calls time out)
+JELLYFIN_URL=http://your-jellyfin:8096
+TMDB_ACCESS_TOKEN=your-tmdb-token
+AUTH_SECRET=replace-with-a-long-random-string
+DATABASE_URL=file:/app/data/fanbiq.db
+USE_SECURE_COOKIES=false
+RESEND_API_KEY=your-resend-key
+FROM_EMAIL=hello@example.com
 ```
 
-### Environment Variable Matrix
+### Common configuration options
+- `PROVIDER`: `jellyfin`, `emby`, `plex`, or `tmdb`
+- `PROVIDER_LOCK`: set to `false` to allow runtime provider selection
+- `WATCHMODE_API_KEY`: optional streaming-source lookup support
+- `USE_STATIC_FILTERS`: use built-in filter lists for large libraries
+- `USE_ANALYTICS`: enable anonymous analytics when desired
+- `ENABLE_DEBUG`: enable verbose logging for troubleshooting
 
-| Variable | Required? | Default | Description |
-|----------|-----------|---------|-------------|
-| `PROVIDER` | ✳️ | `jellyfin` | Primary media provider (`jellyfin`, `tmdb`, `plex`, `emby`) |
-| `PROVIDER_LOCK` | ❌ | `true` | If `true`, users cannot change the provider at runtime |
-| `JELLYFIN_URL` | ✳️ | - | Internal URL of your Jellyfin server |
-| `JELLYFIN_PUBLIC_URL` | ❌ | - | Public URL of your Jellyfin server (for client-side access) |
-| `JELLYFIN_USE_WATCHLIST` | ❌ | `false` | Use Jellyfin Watchlist instead of Favorites |
-| `EMBY_URL` | ✳️ | - | Internal URL of your Emby server |
-| `EMBY_PUBLIC_URL` | ❌ | - | Public URL of your Emby server (for client-side access) |
-| `PLEX_URL` | ✳️ | - | Internal URL of your Plex server |
-| `PLEX_PUBLIC_URL` | ❌ | - | Public URL of your Plex server (for client-side access) |
-| `PLEX_TOKEN` | ❌ | - | Plex Admin/Access Token |
-| `TMDB_ACCESS_TOKEN` | ✳️ | - | TMDB API Read-Only Access Token |
-| `TMDB_DEFAULT_REGION` | ❌ | `SE` | Default TMDB region (ISO 3166-1) for streaming availability/certifications |
-| `AUTH_SECRET` | ❌ | Auto-generated on boot/build | Secret used for session encryption and guest lending token encryption (min 32 chars). See Security & Privacy. |
-| `USE_SECURE_COOKIES` | ❌ | `false` | Set to `true` for HTTPS deployments |
-| `DATABASE_URL` | ❌ | `file:/app/data/swiparr.db` | SQLite path or Turso URL [^1] |
-| `DATABASE_AUTH_TOKEN`| ❌ | - | Auth token for remote databases (e.g. Turso) |
-| `APP_PUBLIC_URL` | ❌ | `swiparr.com` | The public domain where the app is hosted |
-| `URL_BASE_PATH` | ❌ | - | Base path for subpath deployments (e.g. `/swipe`). **Must be set at image build time** — see [Custom Base Path](#custom-base-path). |
-| `ADMIN_USERNAME` | ❌ | - | Global admin username (overrides provider-specific) [^2] |
-| `JELLYFIN_ADMIN_USERNAME` | ❌ | - | Jellyfin-specific admin username [^2] |
-| `EMBY_ADMIN_USERNAME` | ❌ | - | Emby-specific admin username [^2] |
-| `PLEX_ADMIN_USERNAME` | ❌ | - | Plex-specific admin username [^2] |
-| `X_FRAME_OPTIONS` | ❌ | `DENY` | Security header: X-Frame-Options |
-| `CSP_FRAME_ANCESTORS`| ❌ | `none` | Security header: Content-Security-Policy frame-ancestors |
-| `ALLOW_PRIVATE_PROVIDER_URLS` | ❌ | `false` | Allow private/LAN provider URLs for BYOP user inputs |
-| `PLEX_IMAGE_ALLOWED_HOSTS` | ❌ | - | Extra allowlist for Plex image hosts (comma-separated). `PLEX_URL`/`PLEX_PUBLIC_URL` are allowed by default. |
-| `USE_ANALYTICS` | ❌ | `false` | Enable anonymous usage analytics (Vercel deployments) |
-| `ENABLE_DEBUG` | ❌ | `false` | Enable verbose debug logging and client-server error mapping |
-| `USE_STATIC_FILTERS` | ❌ | `false` | Skip dynamic filter fetching and use built-in genre/year/rating lists. Useful for very large libraries where filter API calls time out. |
-
-
-[^1]: Can be set to a local file (internal to container) OR external URL. Mostly relevant for Vercel deployments, which uses the Turso integration in the set-up workflow by default where these values are auto-generated and -injected. Can of course be swapped out with a database service provider of choice.
-
-[^2]: Only applicable for providers with authentication (Jellyfin, Plex, Emby). Admin role ownership is tracked per-provider. Defaults to the first user of that provider that logs in (if supported), or matching env vars. Admin capabilities are disabled for providers without built-in authentication (like TMDB).
-
-
-✳️ = Required conditionally
+### Environment reference
+The runtime configuration is defined in [src/lib/config.ts](src/lib/config.ts), and the Docker image behavior is defined in [Dockerfile](Dockerfile).
 
 ---
 
-## Features (Deep dive)
+## Docker deployment
 
-### Session Settings
-
-When you create a session, customize it for your group:
-
-<details>
-<summary><strong>Match Strategies</strong></summary>
-
-- **Two or More**: Any two people liking the same content creates a match
-  - Best for: Larger groups where majority rules
-  - Finding: Quick results, more options
-
-- **Unanimous**: Everyone must like it for a match
-  - Best for: Smaller groups wanting guaranteed crowd-pleasers
-  - Finding: Fewer but higher-quality matches
-</details>
-
-<details>
-<summary><strong>Session Restrictions</strong></summary>
-
-- **Max Likes**: Limit right swipes per person
-  - Forces thoughtful, selective choices
-  - Prevents mindless approval
-
-- **Max Nopes**: Limit left swipes per person
-  - Stops serial negativity
-  - Encourages open-mindedness
-
-- **Max Matches**: Auto-stop when you have enough options
-  - Perfect for when you just need 3-4 solid picks
-</details>
-
-<details>
-<summary><strong>Guest Lending (Account Sharing)</strong></summary>
-
-
-**How it works:**
-
-1. Host enables "Guest Lending" in settings
-2. Guest joins session with just a name - no account needed
-3. Swiparr uses the host's credentials to fetch content
-4. Guest gets a unique ID, their swipes are tracked separately
-5. Guests cannot access host account or modify settings
-
-**Security note:** Host credentials are stored server-side and encrypted at rest using `AUTH_SECRET` while Guest Lending is enabled. See "Generating `AUTH_SECRET`" in Security & Privacy.
-
-**Perfect for:** Movie nights with friends who don't have media servers
-</details>
-
-<details>
-<summary><strong>Admin Role</strong></summary>
-
-
-**Automatically Assigned:** First user to log in for each provider becomes that provider's admin.
-
-**Manual Assignment:** Set `ADMIN_USERNAME` (global) or `[PROVIDER]_ADMIN_USERNAME` (e.g., `JELLYFIN_ADMIN_USERNAME`) environment variables.
-
-**Admin Privileges:**
-- Configure included media libraries for the provider
-- Manage global provider settings
-- Override session restrictions
-- Access admin dashboard (only for providers with authentication)
-</details>
-
----
-
-## 🔄 Provider Flexibility: Two Modes
-
-### Server Lock Mode
-
->PROVIDER_LOCK=true
-
-**One provider, admin-controlled**
-
-- Admin configures ONE provider in environment variables
-- All users automatically use this provider
-- Best for: Families, roommates, shared media servers
-
-### BYOP Mode
-
->PROVIDER_LOCK=false
-
-**Bring Your Own Provider**
-
-- Each user connects their own provider during onboarding
-- Users can switch providers anytime
-- Best for: Users with different media servers, and/or you have none
-
----
-
-## 🔒 Security & Privacy
-
-- **Generating `AUTH_SECRET` (optional)**:
+A Docker Compose example is included in [docker-compose.example.yml](docker-compose.example.yml).
 
 ```bash
-# macOS and Linux
-openssl rand -base64 32
+cp docker-compose.example.yml docker-compose.yml
+docker compose up -d
 ```
 
-Windows users can use https://generate-secret.vercel.app/32.
-
-- **Encrypted Sessions**: iron-session with secure, encrypted cookies
-- **Encrypted Guest Lending Tokens**: host access tokens are encrypted at rest when Guest Lending is enabled
-- **Scoped Access**: Guests can only swipe, no account access
-- **Data Ownership**: Self-hosted = your data stays on your server
-- **Provider Isolation**: No credential sharing in BYOP mode
-- **CORS Protection**: Configured for safe media server integration
-- **Security Headers**: X-Content-Type-Options, X-XSS-Protection, CSP, Referrer-Policy
-- **Network Safety**: Private/LAN provider URLs are blocked by default; enable via `ALLOW_PRIVATE_PROVIDER_URLS`
-- **Mode Awareness**: Env-configured providers are trusted when `PROVIDER_LOCK=true`; user-supplied URLs are checked
-
----
-
-## 🤝 Contributing
-
-**Swiparr is now open for contributions!** 🎉
-
-### How to Contribute
-
-1. **Start with Discussion** - Propose changes before coding
-   - [💡 Ideas & Feature Proposals](https://github.com/m3sserstudi0s/swiparr/discussions/new?category=ideas)
-   - [🐛 Bug Reports](https://github.com/m3sserstudi0s/swiparr/discussions/new?category=bugs)
-2. **Fork & Develop** - After discussion approval
-3. **Pull Request** - With clear description and tests
-
-### Development Setup
-
-```bash
-git clone https://github.com/m3sserstudi0s/swiparr.git
-cd swiparr
-npm install
-npm run dev          # Start dev server
-npm run lint         # Check code style
-```
-
-### Contribution Areas
-
-- **Provider Integrations**: Improve Emby/Plex support
-- **UI/UX**: Mobile responsiveness, accessibility
-- **Performance**: Optimize queries, bundle size
-- **Documentation**: Examples, guides, tutorials
-- **Testing**: Add test coverage (currently minimal)
-
-**First-time contributors welcome!** Start with "good first issue" discussions.
-
----
-
-## 💚 Support the Project
-
-Swiparr is free, open source, and community-supported. Your contributions help:
-
-- ☕ [**Buy Me a Coffee**](https://www.buymeacoffee.com/jakobbjelver) - Quick one-time support
-- 🌟 **Star on GitHub** - Show your support (it's free!)
-- 🏢 **Use swiparr.com** - The hosted version includes infrastructure funding
-
-**All support directly funds development and infrastructure costs.**
-
----
-
-## 📞 Community & Support
-
-All support, questions, and discussions happen in GitHub Discussions:
-
-| Topic | Link |
-|-------|------|
-| ❓ Questions & Help | [Ask a Question](https://github.com/m3sserstudi0s/swiparr/discussions/new?category=q-a) |
-| 💡 Feature Ideas | [Propose a Feature](https://github.com/m3sserstudi0s/swiparr/discussions/new?category=ideas) |
-| 🐛 Bug Reports | [Report a Bug](https://github.com/m3sserstudi0s/swiparr/discussions/new?category=bugs) |
-| 🙌 General Chat | [Start a Discussion](https://github.com/m3sserstudi0s/swiparr/discussions/new?category=general) |
-
----
-
-## 🐳 Docker Advanced Topics
-
-### Custom Base Path
-
-If you want to serve Swiparr under a subpath — e.g. `https://jellyfin.example.com/swipe/` — you need to set `URL_BASE_PATH` **at image build time**, not as a runtime environment variable.
-
-**Why?** Next.js bakes asset URLs (`/_next/static/...`) into the compiled output at build time. Setting a base path only at runtime can fix page routing but leaves all JS/CSS/image references pointing at the wrong path, breaking the app. The prefix must be known before the build.
-
-> **The prebuilt image from `ghcr.io` does not support `URL_BASE_PATH`** — it is built without a base path. You must build your own image.
-
-#### If you are not using compose and want to build the image
-
-```bash
-git clone https://github.com/m3sserstudi0s/swiparr.git
-cd swiparr
-docker build --build-arg URL_BASE_PATH=/swipe -t swiparr-custom .
-```
-Then use `swiparr-custom` as your image name in your docker run command.
-
-#### If you are using compose, compose can build and manage the image for you at runtime
+### Example compose file
 
 ```yaml
 services:
-  swiparr:
-    pull_policy: build
-    build:
-      context: https://github.com/m3sserstudi0s/swiparr.git
-      args:
-        URL_BASE_PATH: /swipe
-    container_name: swiparr
+  fanbiq:
+    image: your-registry/fanbiq:latest
+    container_name: fanbiq
     restart: unless-stopped
     environment:
+      - PROVIDER=jellyfin
       - JELLYFIN_URL=http://jellyfin:8096
-      - URL_BASE_PATH=/swipe       # must match the --build-arg value exactly
+      - AUTH_SECRET=replace-with-a-long-random-string
+      - DATABASE_URL=file:/app/data/fanbiq.db
+      - USE_SECURE_COOKIES=false
     volumes:
-      - ./swiparr-data:/app/data
+      - ./fanbiq-data:/app/data
     ports:
       - 4321:4321
 ```
 
-> `URL_BASE_PATH` must also be passed as a runtime environment variable so the app generates correct internal links and auth redirects. It must match the `--build-arg` value exactly.
-
-#### Step 3 — Configure your reverse proxy
-
-Forward requests for the subpath to the container. The app handles stripping the prefix internally — **do not strip it in the proxy**.
-
-**Nginx:**
-
-```nginx
-location /swipe {
-    proxy_pass http://swiparr:4321;
-    proxy_set_header Host $host;
-    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-    proxy_set_header X-Forwarded-Proto $scheme;
-}
-```
-
-**Traefik (Docker labels):**
-
-```yaml
-labels:
-  - "traefik.enable=true"
-  - "traefik.http.routers.swiparr.rule=Host(`jellyfin.example.com`) && PathPrefix(`/swipe`)"
-  - "traefik.http.routers.swiparr.tls=true"
-```
-
-**Caddy:**
-
-```caddy
-handle /swipe* {
-    reverse_proxy swiparr:4321
-}
-```
+The container expects a persistent data directory, and the example uses a mounted volume for both the database and app state.
 
 ---
 
-### Reverse Proxy Configuration (root path)
+## Development workflow
 
-**Nginx Example:**
+### Useful commands
 
-```nginx
-location / {
-    proxy_pass http://swiparr:4321;
-    proxy_set_header Host $host;
-    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-    proxy_set_header X-Forwarded-Proto $scheme;
-}
+```bash
+npm run dev
+npm run build
+npm run lint
+npm run db:migrate
+npm run db:generate
 ```
 
-**Required Headers:**
-- `Host` - Required for authentication
-- `X-Forwarded-For` - Client IP for logging
-- `X-Forwarded-Proto` - Protocol detection
+### Project structure
+- [src/app](src/app): routes, layouts, pages, and API handlers
+- [src/components](src/components): UI, feature components, and shared views
+- [src/lib](src/lib): providers, services, settings, utilities, runtime config, and auth helpers
+- [src/db](src/db): schema, migrations, and persistence logic
 
-### Volume Management
-
-```yaml
-volumes:
-  - ./data:/app/data          # Database & cache
-  - ./logs:/app/logs          # Optional: Persist logs
-```
-
-### Environment File
-
-Use `--env-file .env` with Docker for cleaner configuration management.
+There is no dedicated test suite configured at the moment, so validation is primarily done through builds and linting.
 
 ---
 
-## 📚 Additional Resources
+## Security and privacy notes
 
-- **AGENTS.md** - Developer guide and code standards (for contributors)
-- **GitHub Releases** - Detailed changelog for each version
+A few important defaults and safeguards are included in the app:
 
----
-
-## 📄 License
-
-**MIT License** - See [LICENSE](LICENSE) file for details
-
-You're free to use, modify, and distribute Swiparr. Commercial use is permitted.
+- `AUTH_SECRET` is used for session encryption and other sensitive flows
+- `USE_SECURE_COOKIES` should be enabled behind HTTPS deployments
+- Provider URLs can be restricted for safety depending on your deployment setup
+- Guest access is intentionally scoped to the session and does not grant broader account access
+- Self-hosted deployments keep your data on your own infrastructure when you choose to run the app yourself
 
 ---
 
-<div align="center">
+## Contributing
 
-**Made with ❤️ and late nights**
+Contributions are welcome. If you are planning a change, start by opening an issue or discussion so the direction is clear before implementation begins.
 
-<p>
-  <a href="https://swiparr.com">🌐 Swiparr Global</a> • 
-  <a href="https://github.com/m3sserstudi0s/swiparr">⭐ GitHub Repo</a> • 
-  <a href="https://github.com/m3sserstudi0s/swiparr/discussions">💬 Community</a>
-</p>
+The project is currently organized around the app router, provider abstraction, and shared UI components, so changes are easiest to review when they stay focused on one of those areas.
 
-</div>
+---
+
+## License
+
+This project is licensed under the MIT License. See [LICENSE](LICENSE) for details.

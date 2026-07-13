@@ -7,6 +7,7 @@ import { getSessionOptions } from '@/lib/session';
 import { SessionData } from '@/types';
 import { db } from '@/db';
 import { flicks, type FlickRow, nativeUsers, follows } from '@/db/schema';
+import { FlickPersonalizationService } from '@/lib/services/flick-personalization-service';
 
 export async function GET(request: NextRequest) {
     const cookieStore = await cookies();
@@ -58,7 +59,6 @@ export async function GET(request: NextRequest) {
     const mappedRows = rows.map((row: { flick: FlickRow; userId: string | null }) => {
       const row_data = row.flick;
       const userId = row.userId;
-      // Build the avatar URL using the actual user ID
       const uploaderAvatarUrl = userId ? `/api/user/profile-picture/${userId}` : '';
       const isFollowedByCurrentUser = userId ? followedIds.has(userId) : false;
 
@@ -68,23 +68,23 @@ export async function GET(request: NextRequest) {
         videoUrl: row_data.videoUrl,
         movieTitle: row_data.movieTitle,
         movieYear: row_data.movieYear,
-        // The `flicks` table does not store a separate poster column.
-        // Use the backdrop as a reasonable poster fallback for now.
         moviePosterUrl: row_data.movieBackdropUrl || '',
         movieBackdropUrl: row_data.movieBackdropUrl,
         uploader: row_data.uploader,
-        // Avatar URL is built from the actual userId via join
-        uploaderAvatarUrl: uploaderAvatarUrl,
+        uploaderAvatarUrl,
         caption: row_data.caption,
         likes: row_data.likes,
         comments: row_data.comments,
         timestamp: formatDistanceToNow(row_data.createdAt, { addSuffix: true }),
         isFollowedByCurrentUser,
+        tags: row_data.tags || [],
       };
     });
 
+    const rankedFlicks = await FlickPersonalizationService.getRankedFlicks(currentUserId, mappedRows);
+
     return NextResponse.json({
-      flicks: mappedRows,
+      flicks: rankedFlicks,
       total: count,
       page: pageNumber,
       hasMore: offset + rows.length < count,

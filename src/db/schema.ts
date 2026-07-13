@@ -226,3 +226,33 @@ export const flicks = pgTable('flicks', {
 
 export type FlickRow = InferSelectModel<typeof flicks>;
 export type NewFlick = InferInsertModel<typeof flicks>;
+
+export const flickInteractions = pgTable("FlickInteraction", {
+  id: serial("id").primaryKey(),
+  userId: text("userId").notNull(),
+  flickId: text("flickId").notNull(),
+  eventType: text("eventType").notNull(),
+  movieId: text("movieId"),
+  movieTitle: text("movieTitle"),
+  uploader: text("uploader"),
+  metadata: text("metadata"),
+  createdAt: timestamp("createdAt").notNull().default(sql`CURRENT_TIMESTAMP`),
+}, (table) => [
+  index("FlickInteraction_userId_createdAt_idx").on(table.userId, table.createdAt),
+  index("FlickInteraction_flickId_idx").on(table.flickId),
+  index("FlickInteraction_eventType_idx").on(table.eventType),
+]);
+
+export type FlickInteraction = InferSelectModel<typeof flickInteractions>;
+export type NewFlickInteraction = InferInsertModel<typeof flickInteractions>;
+
+export const flickPersonalizationProfiles = pgTable("FlickPersonalizationProfile", {
+  userId: text("userId").primaryKey(),
+  preferences: text("preferences").notNull().default('{}'),
+  updatedAt: timestamp("updatedAt").notNull().default(sql`CURRENT_TIMESTAMP`),
+}, (table) => [
+  index("FlickPersonalizationProfile_updatedAt_idx").on(table.updatedAt),
+]);
+
+export type FlickPersonalizationProfile = InferSelectModel<typeof flickPersonalizationProfiles>;
+export type NewFlickPersonalizationProfile = InferInsertModel<typeof flickPersonalizationProfiles>;

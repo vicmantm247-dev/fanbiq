@@ -3,9 +3,9 @@
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { ChevronLeft, Search, MoreVertical, Edit2, ArrowUpRight, Loader2, BadgeCheck, User } from "lucide-react";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { ChevronLeft, Search, MoreVertical, Edit2, ArrowUpRight, Loader2, BadgeCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { ProfilePicturePicker } from "./ProfilePicturePicker";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { apiClient } from "@/lib/api-client";
@@ -217,12 +217,14 @@ export default function UserProfilePage({
           {/* Avatar + Name + ID */}
           <div className="flex items-center gap-3 mb-4">
             <div className="relative flex-shrink-0">
-              <Avatar className="w-22 h-22 border-2 border-background">
-                <AvatarImage src={avatarUrl} alt={displayName} />
-                <AvatarFallback className="text-lg font-bold">
-                  {!avatarUrl ? <User className="size-6" /> : displayName.charAt(0).toUpperCase()}
-                </AvatarFallback>
-              </Avatar>
+              <ProfilePicturePicker
+                currentImage={avatarUrl}
+                hasCustomImage={Boolean(avatarUrl)}
+                allowProviderFallback={false}
+                editable={false}
+                size="lg"
+                className="shrink-0"
+              />
             </div>
 
             <div className="flex-1">

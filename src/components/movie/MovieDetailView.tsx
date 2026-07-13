@@ -11,7 +11,16 @@ import { Skeleton } from "@/components/ui/skeleton";
 import Link from "next/link";
 import { motion, useMotionValue, useTransform } from "framer-motion";
 import { OptimizedImage } from "@/components/ui/optimized-image";
+import StreamList from "./StreamList";
 import { Drawer, DrawerContent, DrawerTitle } from "../ui/drawer";
+import {
+  Sheet,
+  SheetTrigger,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetFooter,
+} from "../ui/sheet";
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
 import { useRuntimeConfig } from "@/lib/runtime-config";
 import { useSession } from "@/hooks/api";
@@ -220,24 +229,26 @@ export function MovieDetailView({ movieId, mediaType, onClose, showLikedBy = tru
                 )}
 
                 <div className="flex gap-2 mb-8 flex-wrap">
-                  {capabilities.requiresServerUrl ? (
-                    <Link href={detailsUrl} className="w-32" target="_blank">
+                  {/* Open streaming sheet for both server & TMDB flows */}
+                  <Sheet>
+                    <SheetTrigger asChild>
                       <Button className="w-32" size="lg">
                         <Play className="w-4 h-4 mr-2 fill-current" /> Play
                       </Button>
-                    </Link>
-                  ) : (
-                    <Link 
-                      href={`${mediaType === 'tv' ? TMDB_TV_BASE_URL : TMDB_MOVIE_BASE_URL}/${movie.Id}`} 
-                      target="_blank" 
-                      rel="noopener noreferrer" 
-                      className="w-32"
+                    </SheetTrigger>
+                    <SheetContent
+                      side="bottom"
+                      className="rounded-t-2xl border-t border-border/60 bg-background h-[70dvh] max-h-[80vh] flex flex-col gap-0 p-0 overflow-hidden"
                     >
-                      <Button className="w-32" size="lg">
-                        <ExternalLink className="w-4 h-4 mr-2" /> See more
-                      </Button>
-                    </Link>
-                  )}
+                      <SheetHeader className="px-4 pt-4 pb-2 shrink-0">
+                        <SheetTitle>Streaming Sources</SheetTitle>
+                      </SheetHeader>
+                      <div className="flex-1 min-h-0 overflow-hidden">
+                        <StreamList movieName={movie.Name} mediaType={(mediaType ?? movie.mediaType) as 'movie' | 'tv'} />
+                      </div>
+                      <SheetFooter className="pt-0" />
+                    </SheetContent>
+                  </Sheet>
                   {!isGuest && capabilities.hasAuth && capabilities.hasWatchlist && (
                     <Button
                       className="w-32"

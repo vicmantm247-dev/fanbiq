@@ -6,11 +6,6 @@ import {
   Play,
   Pause,
   Heart,
-  MessageCircle,
-  Share2,
-  Bookmark,
-  Plus,
-  Check,
   Trash2,
 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -22,6 +17,18 @@ import { useSwipe } from "@/hooks/api/use-swipe";
 import { useFollowUser } from "@/hooks/api/use-follow-user";
 import { useLikes, useSession } from "@/hooks/api";
 import { toast } from "sonner";
+
+async function trackFlickEvent(flickId: string, eventType: string, payload?: Record<string, unknown>) {
+  try {
+    await fetch("/api/flicks/events", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ flickId, eventType, ...payload }),
+    });
+  } catch {
+    // Fail silently so personalization never blocks the UI.
+  }
+}
 
 export interface Flick {
   id: string;
@@ -117,6 +124,11 @@ export function VideoCard({ flick, isActive, isFeedActive, initialIsFollowed = f
         p.then(() => {
           setPlaying(true);
           setIsVideoLoading(false);
+          void trackFlickEvent(flick.id, "flick_viewed", {
+            movieId: flick.movieId,
+            movieTitle: flick.movieTitle,
+            uploader: flick.uploader,
+          });
         }).catch(() => {
           setPlaying(false);
           setIsVideoLoading(false);
@@ -196,10 +208,18 @@ export function VideoCard({ flick, isActive, isFeedActive, initialIsFollowed = f
     openMovie(flick.movieId);
   };
 
+  const handleFollow = (nextState: boolean) => {
+    setFollowed(nextState);
+    onFollowStatusChange?.(flick.uploader, nextState);
+    void trackFlickEvent(flick.id, "uploader_followed", {
+      uploader: flick.uploader,
+    });
+  };
+
   const handleAddToLikes = async (e: MouseEvent<HTMLButtonElement>) => {
     e.stopPropagation();
     if (!flick.movieId && !flick.id) {
-      toast.error("Could not add this movie to your likes.", {
+      toast.error("Could not add this item to your likes.", {
         position: "top-right",
       });
       return;
@@ -217,10 +237,16 @@ export function VideoCard({ flick, isActive, isFeedActive, initialIsFollowed = f
       },
     });
 
+    void trackFlickEvent(flick.id, "flick_added_to_likes_list", {
+      movieId: itemId,
+      movieTitle: flick.movieTitle,
+      uploader: flick.uploader,
+    });
+
     toast.promise(promise, {
-      loading: "Adding movie to like list...",
-      success: "Movie added to like list.",
-      error: "Unable to add this movie to your like list.",
+      loading: "Adding item to like list...",
+      success: "Item added to like list.",
+      error: "Unable to add this item to your like list.",
       position: "top-right",
     });
 
@@ -245,28 +271,55 @@ export function VideoCard({ flick, isActive, isFeedActive, initialIsFollowed = f
 
   const iconClass = "drop-shadow-[0_1px_4px_rgba(0,0,0,0.7)]";
 
+  const handleContextMenu = (e: MouseEvent<HTMLElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+  };
+
   return (
     <div
       onClick={togglePlay}
+      onContextMenu={handleContextMenu}
       className={cn(
         "relative h-full w-full overflow-hidden bg-black text-white cursor-pointer select-none",
         !isActive && "opacity-90"
       )}
     >
       {/* ── Video layer ── */}
-      <div className="absolute inset-0 bg-black flex items-start justify-center">
+      <div className="absolute inset-0 bg-black flex items-center justify-center bottom-[55px]">
         {flick.videoUrl ? (
           <video
             ref={videoRef}
             src={flick.videoUrl}
-            className="w-full h-full object-cover"
+            className="w-full h-auto object-cover"
             loop
             playsInline
             preload="auto"
+            onContextMenu={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+            }}
             onLoadedData={() => setIsVideoLoading(false)}
             onCanPlay={() => setIsVideoLoading(false)}
             onWaiting={() => setIsVideoLoading(true)}
+            onEnded={() => {
+              void trackFlickEvent(flick.id, "flick_watch_completed", {
+                movieId: flick.movieId,
+                movieTitle: flick.movieTitle,
+                uploader: flick.uploader,
+              });
+            }}
             onError={() => setIsVideoLoading(false)}
+            onPlay={() => {
+              if (!playing) {
+                setPlaying(true);
+              }
+            }}
+            onPause={() => {
+              if (playing) {
+                setPlaying(false);
+              }
+            }}
           />
         ) : flick.posterUrl ? (
           <img
@@ -299,7 +352,7 @@ export function VideoCard({ flick, isActive, isFeedActive, initialIsFollowed = f
       <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-20">
         <div
           className={cn(
-            "rounded-full bg-black/50 p-4 transition-opacity duration-200",
+            "rounded-full p-4 transition-opacity duration-200",
             showControls ? "opacity-100" : "opacity-0"
           )}
         >
@@ -354,13 +407,13 @@ export function VideoCard({ flick, isActive, isFeedActive, initialIsFollowed = f
               >
                 {profileButtonAction.label}
               </button>
-            ) : !followed ? (
+            ) : (
               <button
+                type="button"
                 onClick={(e) => {
                   e.stopPropagation();
                   const nextState = !followed;
-                  setFollowed(nextState);
-                  onFollowStatusChange?.(flick.uploader, nextState);
+                  handleFollow(nextState);
                   followMutation.mutate(followed, {
                     onError: () => {
                       setFollowed(!nextState);
@@ -370,29 +423,13 @@ export function VideoCard({ flick, isActive, isFeedActive, initialIsFollowed = f
                 }}
                 disabled={followMutation.isPending}
                 className="shrink-0 ml-2 rounded-full px-3 py-1 text-[11px] font-semibold bg-white text-black transition-opacity active:opacity-70 disabled:cursor-not-allowed disabled:opacity-50"
+                aria-pressed={followed}
               >
-                + Follow
+                {followed ? "Following" : "Follow"}
               </button>
-            ) : (
-              <span className="shrink-0 ml-2 rounded-full px-3 py-1 text-[11px] font-medium bg-white/10 border border-white/18 text-white/55">
-                Following
-              </span>
             )
           )}
         </div>
-        {onDelete && (
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              onDelete(flick.id);
-            }}
-            className="absolute top-3 right-3 z-40 rounded-full bg-black/60 p-2 text-white transition hover:bg-black"
-            aria-label="Delete flick"
-          >
-            <Trash2 className="size-4" />
-          </button>
-        )}
-
         <button
           type="button"
           onClick={(e) => {

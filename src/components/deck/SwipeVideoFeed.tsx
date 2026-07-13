@@ -1,15 +1,17 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { DeckControls } from "@/components/deck/DeckControls";
 import { MatchOverlay } from "@/components/deck/MatchOverlay";
 import { VideoCard, type Flick } from "@/components/flicks/VideoCard";
+import { ShareSheet } from "@/components/ui/share-sheet";
 import { useSession, useStats, useSwipe, useLikes, useUndoSwipe } from "@/hooks/api";
 import { useMovieDetail } from "@/components/movie/MovieDetailProvider";
 import { toast } from "sonner";
 import { cn, parseJsonResponse } from "@/lib/utils";
+import { useRuntimeConfig } from "@/lib/runtime-config";
 import { ChevronUp, ChevronDown, Loader2 } from "lucide-react";
 
 interface SwipeVideoFeedProps {
@@ -29,6 +31,8 @@ export function SwipeVideoFeed({ isActive = true }: SwipeVideoFeedProps) {
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
   const [hasMore, setHasMore] = useState(true);
+  const [isShareOpen, setIsShareOpen] = useState(false);
+  const [shareUrl, setShareUrl] = useState("");
 
   const { data: session } = useSession();
   const sessionCode = session?.code || null;
@@ -41,6 +45,8 @@ export function SwipeVideoFeed({ isActive = true }: SwipeVideoFeedProps) {
   const swipeMutation = useSwipe();
 
   const currentFlick = flicks[activeIndex];
+  const currentUsername = session?.userName ?? null;
+  const isUploadOwner = Boolean(currentFlick?.uploader && currentUsername && currentFlick.uploader === currentUsername);
 
   const leftSwipesRemaining = sessionSettings?.maxLeftSwipes ? Math.max(0, sessionSettings.maxLeftSwipes - (stats?.mySwipes.left || 0)) : undefined;
   const rightSwipesRemaining = sessionSettings?.maxRightSwipes ? Math.max(0, sessionSettings.maxRightSwipes - (stats?.mySwipes.right || 0)) : undefined;
@@ -48,9 +54,14 @@ export function SwipeVideoFeed({ isActive = true }: SwipeVideoFeedProps) {
   const loadFlicks = useCallback(async (pageNum: number) => {
     setLoading(true);
     try {
-      const response = await fetch(`/api/flicks?page=${pageNum}&limit=10`);
+      const response = await fetch(`/api/flicks?page=${pageNum}&limit=10`, { credentials: "include" });
       const data = await parseJsonResponse(response as unknown as Response);
       if (!response.ok) {
+        if (response.status === 401) {
+          setFlicks([]);
+          setHasMore(false);
+          return;
+        }
         throw new Error(data?.error || "Failed to load flicks");
       }
       setFlicks((prev) => (pageNum === 1 ? data.flicks : [...prev, ...data.flicks]));
@@ -101,6 +112,36 @@ export function SwipeVideoFeed({ isActive = true }: SwipeVideoFeedProps) {
     onScroll();
     return () => container.removeEventListener("scroll", onScroll);
   }, [flicks.length, hasMore, loading, loadFlicks, page]);
+
+  const { basePath: rcBasePath } = useRuntimeConfig();
+
+  useEffect(() => {
+    if (!currentFlick) return;
+    const origin = window.location.origin;
+    setShareUrl(`${origin}${rcBasePath}/flicks/${currentFlick.id}`);
+  }, [currentFlick, rcBasePath]);
+
+  const handleDeleteFlick = async () => {
+    if (!currentFlick) return;
+
+    try {
+      const res = await fetch(`/api/flicks/${encodeURIComponent(currentFlick.id)}`, {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+      });
+
+      const result = await res.json();
+      if (!res.ok || result.error) {
+        throw new Error(result.error || "Unable to delete flick.");
+      }
+
+      setFlicks((prev) => prev.filter((flick) => flick.id !== currentFlick.id));
+      setIsShareOpen(false);
+      toast.success("Flick deleted successfully.");
+    } catch (error) {
+      toast.error((error as Error).message || "Could not delete this flick.");
+    }
+  };
 
   useEffect(() => {
     if (isFeedActive) return;
@@ -248,7 +289,7 @@ export function SwipeVideoFeed({ isActive = true }: SwipeVideoFeedProps) {
           onSwipeLeft={() => swipeCurrent("left")}
           onSwipeRight={() => swipeCurrent("right")}
           onToggleLike={handleToggleLike}
-          onOpenFilter={() => undefined}
+          onOpenFilter={() => setIsShareOpen(true)}
           canRewind={Boolean(currentFlick)}
           isLiked={Boolean(currentLiked)}
           rewindImageUrl={currentFlick?.movieBackdropUrl ?? currentFlick?.moviePosterUrl}
@@ -298,6 +339,17 @@ export function SwipeVideoFeed({ isActive = true }: SwipeVideoFeedProps) {
         item={matchedItem}
         sessionCode={sessionCode}
         onClose={() => setMatchedItem(null)}
+      />
+      <ShareSheet
+        open={isShareOpen}
+        onOpenChange={setIsShareOpen}
+        onOpenFilter={() => setIsShareOpen(false)}
+        url={shareUrl}
+        title={currentFlick?.movieTitle ?? "fanbiQ"}
+        uploader={currentFlick?.uploader}
+        currentUsername={currentUsername}
+        onDelete={isUploadOwner ? handleDeleteFlick : undefined}
+        hideTrigger
       />
     </div>
   );

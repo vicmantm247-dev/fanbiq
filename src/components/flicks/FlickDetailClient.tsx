@@ -1,12 +1,14 @@
 "use client";
 
-import { useCallback, useMemo } from "react";
+import { useCallback, useMemo, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { DeckControls } from "@/components/deck/DeckControls";
 import { VideoCard, type Flick } from "@/components/flicks/VideoCard";
 import { useLikes, useSession, useSwipe, useUndoSwipe } from "@/hooks/api";
 import { useMovieDetail } from "@/components/movie/MovieDetailProvider";
 import { toast } from "sonner";
+import { ShareSheet } from "@/components/ui/share-sheet";
+import { useRuntimeConfig } from "@/lib/runtime-config";
 
 interface FlickDetailClientProps {
   flick: Flick;
@@ -19,6 +21,16 @@ export function FlickDetailClient({ flick }: FlickDetailClientProps) {
   const swipeMutation = useSwipe();
   const undoSwipe = useUndoSwipe();
   const { openMovie } = useMovieDetail();
+
+  const { basePath: rcBasePath } = useRuntimeConfig();
+  const [isShareOpen, setIsShareOpen] = useState(false);
+  const [shareUrl, setShareUrl] = useState("");
+
+  useEffect(() => {
+    if (!flick?.id) return;
+    if (typeof window === "undefined") return;
+    setShareUrl(`${window.location.origin}${rcBasePath}/flicks/${flick.id}`);
+  }, [flick?.id, rcBasePath]);
 
   const currentItemId = useMemo(() => flick.movieId ?? flick.id, [flick.id, flick.movieId]);
 
@@ -74,6 +86,24 @@ export function FlickDetailClient({ flick }: FlickDetailClientProps) {
     swipeCurrent("right");
   }, [currentItemId, isLiked, swipeCurrent, undoSwipe]);
 
+  const isUploadOwner = Boolean(flick.uploader && session?.userName && flick.uploader === session.userName);
+
+  const handleDeleteFlick = async () => {
+    try {
+      const res = await fetch(`/api/flicks/${encodeURIComponent(flick.id)}`, {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+      });
+      const result = await res.json();
+      if (!res.ok || result.error) throw new Error(result.error || "Unable to delete flick.");
+      toast.success("Flick deleted successfully.");
+      setIsShareOpen(false);
+      router.push("/");
+    } catch (err) {
+      toast.error((err as Error).message || "Could not delete this flick.");
+    }
+  };
+
   return (
     <div className="relative w-full h-full">
       <VideoCard flick={flick} isActive={true} isFeedActive={true} />
@@ -88,7 +118,7 @@ export function FlickDetailClient({ flick }: FlickDetailClientProps) {
           onSwipeLeft={() => undefined}
           onSwipeRight={() => swipeCurrent("right")}
           onToggleLike={handleToggleLike}
-          onOpenFilter={() => router.push("/search")}
+          onOpenFilter={() => setIsShareOpen(true)}
           canRewind={true}
           isLiked={Boolean(isLiked)}
           rewindImageUrl={flick.movieBackdropUrl ?? flick.posterUrl}
@@ -97,6 +127,17 @@ export function FlickDetailClient({ flick }: FlickDetailClientProps) {
           leftSwipesRemaining={0}
         />
       </div>
+      <ShareSheet
+        open={isShareOpen}
+        onOpenChange={setIsShareOpen}
+        onOpenFilter={() => router.push("/search")}
+        url={shareUrl}
+        title={flick.movieTitle ?? "fanbiQ"}
+        uploader={flick.uploader}
+        currentUsername={session?.userName ?? null}
+        onDelete={isUploadOwner ? handleDeleteFlick : undefined}
+        hideTrigger
+      />
     </div>
   );
 }

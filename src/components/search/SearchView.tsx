@@ -225,23 +225,27 @@ export function SearchView() {
   return (
     <main className="relative w-full h-screen flex flex-col bg-background text-foreground">
       {/* ── Search header ── */}
-      <div className="mx-auto w-full max-w-6xl px-4 pt-[calc((env(safe-area-inset-top)+20px)*2.5)] pb-4 flex-shrink-0">
+      <div className="mx-auto w-full max-w-6xl px-4 pt-[calc((env(safe-area-inset-top)+20px)*1.5)] pb-4 flex-shrink-0">
         <div className="space-y-2">
           <form
             onSubmit={(e) => {
               e.preventDefault();
               handleSearchSubmit(query);
             }}
-            className="flex gap-2 items-center"
+            className="relative"
           >
             <Input
               placeholder="Search titles, movies, or users"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              className="h-10 flex-1"
+              className="h-10 w-full rounded-full pr-18"
               autoFocus
             />
-            <Button type="submit" size="sm" className="h-10 px-3">
+            <Button
+              type="submit"
+              size="sm"
+              className="absolute right-1 top-1/2 h-8 -translate-y-1/2 rounded-full px-3"
+            >
               <Search className="size-4" />
               Search
             </Button>

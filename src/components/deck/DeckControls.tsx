@@ -42,22 +42,12 @@ export function DeckControls({
       <Button
         size="icon"
         variant="secondary"
-        className="h-10 w-10 rounded-full bg-background/50 border-0 overflow-hidden relative"
-        onClick={onRewind}
-        disabled={!canRewind}
-        aria-label={rewindAriaLabel ?? "Open movie details"}
+        className="h-12 w-12 rounded-full bg-background/50 border-2 relative"
+        onClick={onOpenFilter}
       >
-        {rewindImageUrl ? (
-          <>
-            <img
-              src={rewindImageUrl}
-              alt={rewindAriaLabel ?? "Movie backdrop"}
-              className="h-full w-full object-cover"
-            />
-            <span className="absolute inset-0 bg-black/30" aria-hidden="true" />
-          </>
-        ) : (
-          <Rewind className="size-5.5" />
+        <SlidersHorizontal className="size-5.5" />
+        {hasAppliedFilters && (
+          <span className="rounded-full bg-foreground absolute top-0 right-0 size-3.5 border-2 border-background animate-in zoom-in duration-300" />
         )}
       </Button>
       <Button
@@ -94,12 +84,19 @@ export function DeckControls({
       <Button
         size="icon"
         variant="secondary"
-        className="h-12 w-12 rounded-full bg-background/50 border-2 relative"
-        onClick={onOpenFilter}
+        className="h-10 w-10 rounded-full overflow-hidden relative border-2 border-white/50 bg-background/70"
+        onClick={onRewind}
+        disabled={!canRewind}
+        aria-label={rewindAriaLabel ?? "Open movie details"}
       >
-        <SlidersHorizontal className="size-5.5" />
-        {hasAppliedFilters && (
-          <span className="rounded-full bg-foreground absolute top-0 right-0 size-3.5 border-2 border-background animate-in zoom-in duration-300" />
+        {rewindImageUrl ? (
+          <img
+            src={rewindImageUrl}
+            alt={rewindAriaLabel ?? "Movie backdrop"}
+            className="h-full w-full object-cover"
+          />
+        ) : (
+          <Rewind className="size-5.5" />
         )}
       </Button>
     </div>
