@@ -12,6 +12,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Spinner } from "@/components/ui/spinner";
 import { cn } from "@/lib/utils";
 import { CommentsSheet, type Comment } from "@/components/flicks/CommentsSheet";
+import { JoinPromptSheet } from "@/components/flicks/JoinPromptSheet";
 import { useMovieDetail } from "@/components/movie/MovieDetailProvider";
 import { useSwipe } from "@/hooks/api/use-swipe";
 import { useFollowUser } from "@/hooks/api/use-follow-user";
@@ -83,6 +84,7 @@ export function VideoCard({ flick, isActive, isFeedActive, initialIsFollowed = f
   const [isVideoLoading, setIsVideoLoading] = useState(Boolean(flick.videoUrl));
 
   const [commentsOpen, setCommentsOpen] = useState(false);
+  const [showJoinPrompt, setShowJoinPrompt] = useState(false);
 
   const { openMovie } = useMovieDetail();
   const { mutateAsync: addToLikes } = useSwipe();
@@ -93,6 +95,12 @@ export function VideoCard({ flick, isActive, isFeedActive, initialIsFollowed = f
   useEffect(() => {
     setFollowed(initialIsFollowed);
   }, [initialIsFollowed]);
+
+  useEffect(() => {
+    setShowJoinPrompt(false);
+    setPlaying(false);
+    setShowControls(false);
+  }, [flick.id]);
 
   useEffect(() => {
     const itemId = flick.movieId ?? flick.id;
@@ -292,7 +300,6 @@ export function VideoCard({ flick, isActive, isFeedActive, initialIsFollowed = f
             ref={videoRef}
             src={flick.videoUrl}
             className="w-full h-auto object-cover"
-            loop
             playsInline
             preload="auto"
             onContextMenu={(e) => {
@@ -303,14 +310,22 @@ export function VideoCard({ flick, isActive, isFeedActive, initialIsFollowed = f
             onCanPlay={() => setIsVideoLoading(false)}
             onWaiting={() => setIsVideoLoading(true)}
             onEnded={() => {
+              setPlaying(false);
+              if (videoRef.current) {
+                videoRef.current.pause();
+              }
               void trackFlickEvent(flick.id, "flick_watch_completed", {
                 movieId: flick.movieId,
                 movieTitle: flick.movieTitle,
                 uploader: flick.uploader,
               });
+              if (!session?.userId && !session?.isGuest) {
+                setShowJoinPrompt(true);
+              }
             }}
             onError={() => setIsVideoLoading(false)}
             onPlay={() => {
+              setShowJoinPrompt(false);
               if (!playing) {
                 setPlaying(true);
               }
@@ -461,6 +476,7 @@ export function VideoCard({ flick, isActive, isFeedActive, initialIsFollowed = f
           setCommentsActive(false);
         }}
       />
+      <JoinPromptSheet open={showJoinPrompt} onOpenChange={setShowJoinPrompt} />
     </div>
   );
 }

@@ -1,6 +1,6 @@
 import React from "react";
 import { Button } from "@/components/ui/button";
-import { Heart, HeartOff, X, Rewind, SlidersHorizontal } from "lucide-react";
+import { Heart, HeartOff, X, Rewind, Share2 } from "lucide-react";
 import { Badge } from "../ui/badge";
 import { cn } from "@/lib/utils";
 
@@ -45,7 +45,7 @@ export function DeckControls({
         className="h-12 w-12 rounded-full bg-background/50 border-2 relative"
         onClick={onOpenFilter}
       >
-        <SlidersHorizontal className="size-5.5" />
+        <Share2 className="size-5.5" />
         {hasAppliedFilters && (
           <span className="rounded-full bg-foreground absolute top-0 right-0 size-3.5 border-2 border-background animate-in zoom-in duration-300" />
         )}

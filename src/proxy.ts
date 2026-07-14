@@ -66,6 +66,11 @@ export async function proxy(request: NextRequest) {
   // Define public paths
   const isPublicPath =
     pathname === "/login" ||
+    pathname.startsWith("/flicks/") ||
+    pathname === "/forgot-password" ||
+    pathname.startsWith("/forgot-password") ||
+    pathname === "/terms" ||
+    pathname.startsWith("/terms") ||
     pathname.startsWith("/api/search") ||
     pathname.startsWith("/api/auth") ||
     pathname.startsWith("/api/og") ||

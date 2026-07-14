@@ -1,10 +1,10 @@
 "use client";
 
+import Link from "next/link";
 import { BookOpenText, Code, Info, Loader2, AlertCircle, CircleCheck, ExternalLink, FileText, ArrowUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useRuntimeConfig } from "@/lib/runtime-config";
-import { GITHUB_URL } from "@/lib/constants";
 import { SettingsSection } from "./SettingsSection";
 import { toast } from "sonner";
 import { useVersion } from "@/hooks/api";
@@ -87,6 +87,24 @@ export function AboutSettings({ onShowUserGuide }: AboutSettingsProps) {
                             </Badge>
                         )}
                     </div>
+                </Button>
+
+                <Button
+                    variant="outline"
+                    className="w-full justify-between font-normal h-12 px-3 py-7"
+                    asChild
+                >
+                    <Link href="/terms">
+                        <div className="flex items-center justify-between w-full">
+                            <div className="flex items-center gap-3">
+                                <div className="p-2 bg-primary/10 rounded-md text-primary">
+                                    <FileText className="size-4" />
+                                </div>
+                                <span>Terms & Conditions</span>
+                            </div>
+                            <ExternalLink className="size-4 text-muted-foreground" />
+                        </div>
+                    </Link>
                 </Button>
 
                 {!isLatest && latestVersion && (

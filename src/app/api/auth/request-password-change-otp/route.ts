@@ -11,19 +11,38 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { userId, email } = body;
 
-    if (!userId || !email) {
+    if (!email) {
       return NextResponse.json(
-        { error: "User ID and email are required" },
+        { error: "Email is required" },
         { status: 400 }
       );
     }
 
-    // Verify user exists
-    const user = await db
-      .select()
-      .from(nativeUsers)
-      .where(eq(nativeUsers.id, userId))
-      .then((r: typeof nativeUsers.$inferSelect[]) => r[0]);
+    const normalizedEmail = email.toLowerCase().trim();
+
+    let user = null;
+    if (userId) {
+      user = await db
+        .select()
+        .from(nativeUsers)
+        .where(eq(nativeUsers.id, userId))
+        .then((r: typeof nativeUsers.$inferSelect[]) => r[0]);
+
+      if (user && user.email.toLowerCase().trim() !== normalizedEmail) {
+        return NextResponse.json(
+          { error: "Email does not match user" },
+          { status: 400 }
+        );
+      }
+    }
+
+    if (!user) {
+      user = await db
+        .select()
+        .from(nativeUsers)
+        .where(eq(nativeUsers.email, normalizedEmail))
+        .then((r: typeof nativeUsers.$inferSelect[]) => r[0]);
+    }
 
     if (!user) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
@@ -35,18 +54,18 @@ export async function POST(request: NextRequest) {
 
     // Store OTP token
     await db.insert(verificationTokens).values({
-      userId,
+      userId: user.id,
       token: otp,
       expiresAt,
     });
 
     // Send email
-    await sendVerificationEmail(email, user.username || email, otp);
+    await sendVerificationEmail(normalizedEmail, user.username || normalizedEmail, otp);
 
-    logger.info(`Password change OTP sent to ${email}`);
+    logger.info(`Password change OTP sent to ${normalizedEmail}`);
 
     return NextResponse.json(
-      { message: "OTP sent to your email", userId },
+      { message: "OTP sent to your email", userId: user.id },
       { status: 200 }
     );
   } catch (error) {
