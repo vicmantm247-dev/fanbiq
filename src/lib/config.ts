@@ -45,7 +45,7 @@ const envSchema = z.object({
 
   // UI / Proxy
   URL_BASE_PATH: z.string().default(''),
-  APP_PUBLIC_URL: z.string().default('swiparr.com'),
+  APP_PUBLIC_URL: z.string().default('fanbiq.com'),
   JELLYFIN_USE_WATCHLIST: z.preprocess((val) => val === 'true', z.boolean()).default(false),
 
   APP_VERSION: z.string().optional(),
