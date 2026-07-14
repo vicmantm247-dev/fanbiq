@@ -7,7 +7,7 @@ import {
     SheetTitle,
     SheetTrigger,
 } from "@/components/ui/sheet";
-import { Bell, LayoutDashboard, ArrowRight, Users, Upload, User } from "lucide-react";
+import { Bell, Equal, ArrowRight, Users, Upload, User } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { apiClient } from "@/lib/api-client";
@@ -93,7 +93,7 @@ export function SettingsSidebar() {
             <Sheet open={open} onOpenChange={setOpen}>
                 <SheetTrigger asChild>
                     <Button className="absolute right-6 size-10 hover:bg-muted/30!" variant="ghost" size="icon">
-                        <LayoutDashboard className="size-5.5 text-white" />
+                        <Equal className="size-5.5 text-white" />
                     </Button>
                 </SheetTrigger>
                 <SheetContent className="flex flex-col overflow-hidden">

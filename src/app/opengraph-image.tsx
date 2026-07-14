@@ -1,5 +1,3 @@
-export const dynamic = "force-dynamic";
-
 import { ImageResponse } from 'next/og'
 import { connection } from 'next/server'
 import { getRuntimeConfig } from '@/lib/runtime-config'
@@ -73,7 +71,7 @@ export default async function Image() {
 
           {/* App Name under logo/emoji */}
           <div tw="text-8xl text-white mb-8" style={{ fontFamily: 'Zalando Sans' }}>
-            fanbIQ
+            fanbIq
           </div>
 
           <div tw="text-4xl text-[#a0a0a0] text-center max-w-4xl leading-relaxed">
