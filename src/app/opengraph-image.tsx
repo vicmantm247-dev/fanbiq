@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 import { ImageResponse } from 'next/og'
 import { connection } from 'next/server'
 import { getRuntimeConfig } from '@/lib/runtime-config'
@@ -51,7 +53,7 @@ export default async function Image() {
     const origin = appPublicUrl.startsWith('http') ? appPublicUrl : `https://${appPublicUrl}`;
     const logoUrl = `${origin}${basePath}/icon1.png`;
 
-    const text = "fanbIQ Swipe on what to watch next, by yourself or together."
+    const text = "fanbIQ Swipe on what to watch next, by yourself or with a friend."
     const sansFont = await loadGoogleFont('Zalando+Sans', text)
 
     return new ImageResponse(
