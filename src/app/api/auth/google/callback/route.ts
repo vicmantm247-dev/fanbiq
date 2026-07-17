@@ -49,6 +49,43 @@ async function fetchGoogleUser(idToken: string, accessToken: string) {
   return response.data;
 }
 
+function normalizeUsername(email: string) {
+  return email
+    .split("@")[0]
+    .replace(/[^a-zA-Z0-9_]/g, "")
+    .slice(0, 30) || "google";
+}
+
+async function insertUserWithRetry(user: {
+  id: string;
+  email: string;
+  username: string;
+  displayName: string;
+}) {
+  const baseUsername = user.username;
+
+  for (let attempt = 0; attempt < 3; attempt++) {
+    const username = attempt === 0 ? baseUsername : `${baseUsername}_${Math.floor(1000 + Math.random() * 9000)}`;
+    try {
+      await db.insert(nativeUsers).values({
+        id: user.id,
+        email: user.email,
+        username,
+        passwordHash: "",
+        displayName: user.displayName,
+        isVerified: true,
+      } as any);
+      return username;
+    } catch (error: any) {
+      const isUniqueViolation = error?.code === "23505" || error?.message?.includes("duplicate key value");
+      if (!isUniqueViolation || attempt === 2) {
+        throw error;
+      }
+    }
+  }
+  throw new Error("Unable to create unique username for Google sign-in.");
+}
+
 export async function GET(request: NextRequest) {
   let redirectUri: string | undefined;
   try {
@@ -64,22 +101,32 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Missing Google authorization code." }, { status: 400 });
     }
 
+    // Validate CSRF nonce stored in httpOnly cookie
+    const cookieStore = await cookies();
+    const nonceCookie = cookieStore.get("__fanbiq_google_nonce")?.value;
+    const cbCookie = cookieStore.get("__fanbiq_google_cb")?.value;
+    if (!state || !nonceCookie || state !== nonceCookie) {
+      logger.warn("[Auth] Google state nonce mismatch or missing");
+      // Clear cookies and fall back to login
+      const loginUrl = new URL(`${config.app.basePath || ""}/login`, request.url);
+      const resp = NextResponse.redirect(loginUrl);
+      resp.cookies.delete("__fanbiq_google_nonce");
+      resp.cookies.delete("__fanbiq_google_cb");
+      return resp;
+    }
+
+    // Resolve and validate callbackUrl from cookie
     let callbackUrl = `${request.nextUrl.origin}${config.app.basePath || ""}/login`;
-    if (state) {
+    if (cbCookie) {
       try {
-        const parsed = JSON.parse(decodeURIComponent(state));
-        if (parsed && parsed.callbackUrl) {
-          try {
-            // Ensure callbackUrl is absolute. If parsed.callbackUrl is relative ("/"),
-            // resolve it against the current request origin to avoid Next.js errors.
-            callbackUrl = new URL(parsed.callbackUrl, request.nextUrl.origin).toString();
-          } catch (e) {
-            // If URL resolution fails, keep the default callbackUrl
-            logger.warn('[Auth] Failed to resolve callbackUrl, using default', parsed.callbackUrl, e);
-          }
+        const resolved = new URL(cbCookie, request.nextUrl.origin);
+        if (resolved.origin === request.nextUrl.origin) {
+          callbackUrl = resolved.toString();
+        } else {
+          logger.warn("[Auth] callbackUrl origin mismatch; using default", resolved.origin);
         }
-      } catch {
-        // ignore invalid state parsing
+      } catch (e) {
+        logger.warn("[Auth] Invalid callbackUrl in cookie; using default", cbCookie, e);
       }
     }
 
@@ -94,7 +141,7 @@ export async function GET(request: NextRequest) {
     const email = userInfo.email.toLowerCase();
     const displayName = userInfo.name || userInfo.email.split("@")[0];
 
-    const normalizedUsername = email.split("@")[0].replace(/[^a-zA-Z0-9_]/g, "").slice(0, 30);
+    const normalizedUsername = normalizeUsername(email);
     const existingUser = await db
       .select()
       .from(nativeUsers)
@@ -109,13 +156,13 @@ export async function GET(request: NextRequest) {
       username = existingUser.username;
     } else {
       userId = uuidv4();
-      username = normalizedUsername || `google_${userId.slice(0, 8)}`;
-
-      // `passwordHash` is NOT NULL in the schema; for OAuth-created accounts we
-      // store an empty string as a placeholder since authentication is handled by Google.
-      const insertUser = { id: userId, email, username, passwordHash: '', displayName, isVerified: true } as any;
-      await db.insert(nativeUsers).values(insertUser);
-      logger.info(`[Auth] Created native user for Google login: ${email}`);
+      username = await insertUserWithRetry({
+        id: userId,
+        email,
+        username: normalizedUsername,
+        displayName,
+      });
+      logger.info(`[Auth] Created native user for Google login: ${email} as ${username}`);
     }
 
     const cookieStore = await cookies();
@@ -123,9 +170,9 @@ export async function GET(request: NextRequest) {
 
     session.user = {
       Id: userId,
-      Name: displayName,
+      Name: username,
+      DisplayName: displayName,
       DeviceId: `google-${userId}`,
-      // Use the app's configured provider to avoid provider_lock mismatches
       provider: config.app.provider || "google",
       isAdmin: false,
     };
@@ -139,13 +186,12 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     logger.error("Google callback failed", error);
     const errMessage = error instanceof Error ? error.message : String(error);
-    const body: any = {
-      error: "Google login failed.",
-      details: errMessage,
-      redirectUri: typeof redirectUri === 'string' ? redirectUri : undefined,
-      requestUrl: request.nextUrl.href,
-    };
-    // Return debug details so you can inspect the failure when testing against production domain.
+    const body: any = { error: "Google login failed." };
+    if (config.ENABLE_DEBUG) {
+      body.details = errMessage;
+      body.redirectUri = typeof redirectUri === "string" ? redirectUri : undefined;
+      body.requestUrl = request.nextUrl.href;
+    }
     return NextResponse.json(body, { status: 500 });
   }
 }

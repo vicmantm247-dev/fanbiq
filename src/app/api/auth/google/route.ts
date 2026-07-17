@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { config } from "@/lib/config";
+import crypto from "crypto";
 
 const GOOGLE_AUTH_URL = "https://accounts.google.com/o/oauth2/v2/auth";
 const DEFAULT_SCOPE = ["openid", "email", "profile"].join(" ");
@@ -13,7 +14,10 @@ export async function GET(request: NextRequest) {
   }
 
   const callbackUrl = request.nextUrl.searchParams.get("callbackUrl") || `${request.nextUrl.origin}${basePath}/login`;
-  const state = encodeURIComponent(JSON.stringify({ callbackUrl }));
+
+  // CSRF nonce: generate a random token, store it and the callbackUrl in short-lived httpOnly cookies,
+  // and include only the nonce in the OAuth `state` parameter.
+  const nonce = crypto.randomBytes(16).toString("hex");
 
   const redirectUrl = new URL(GOOGLE_AUTH_URL);
   redirectUrl.searchParams.set("client_id", clientId);
@@ -22,7 +26,15 @@ export async function GET(request: NextRequest) {
   redirectUrl.searchParams.set("scope", DEFAULT_SCOPE);
   redirectUrl.searchParams.set("access_type", "offline");
   redirectUrl.searchParams.set("prompt", "select_account");
-  redirectUrl.searchParams.set("state", state);
+  redirectUrl.searchParams.set("state", nonce);
 
-  return NextResponse.redirect(redirectUrl);
+  // Prepare response and set httpOnly cookies for nonce and callbackUrl
+  const res = NextResponse.redirect(redirectUrl);
+  const secure = !!config.auth.secureCookies || (config.app.appPublicUrl || "").startsWith("https://");
+  const cookiePath = basePath || "/";
+  // Short-lived (5 minutes)
+  res.cookies.set("__fanbiq_google_nonce", nonce, { httpOnly: true, secure, sameSite: "lax", path: cookiePath, maxAge: 300 });
+  res.cookies.set("__fanbiq_google_cb", callbackUrl, { httpOnly: true, secure, sameSite: "lax", path: cookiePath, maxAge: 300 });
+
+  return res;
 }

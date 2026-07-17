@@ -3,6 +3,7 @@ import { Filters } from "./session";
 export interface UserSession {
   Id: string;
   Name: string;
+  DisplayName?: string;
   AccessToken?: string;
   DeviceId: string;
   isAdmin?: boolean;
