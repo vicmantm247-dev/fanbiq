@@ -6,6 +6,7 @@ import { getSessionOptions } from "@/lib/session";
 import { SessionData } from "@/types";
 import { config } from "@/lib/config";
 import { db, nativeUsers } from "@/db";
+import { eq } from "drizzle-orm";
 import { v4 as uuidv4 } from "uuid";
 import { logger } from "@/lib/logger";
 
