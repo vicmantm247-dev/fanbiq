@@ -6,7 +6,6 @@ import bcrypt from "bcryptjs";
 import { eq, or } from "drizzle-orm";
 import { loginSchema } from "@/lib/validations";
 import { getClientIp, isRateLimitedKey } from "@/lib/rate-limit";
-import { getMediaProvider } from "@/lib/providers/factory";
 import { ConfigService } from "@/lib/services/config-service";
 import { AuthService } from "@/lib/services/auth-service";
 import { logger } from "@/lib/logger";
@@ -34,8 +33,7 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ message: "Too many requests" }, { status: 429, headers: { "Retry-After": String(ipLimit.retryAfter) } });
         }
 
-        const provider = getMediaProvider(bodyProvider);
-        const activeProviderName = bodyProvider || provider.name;
+        const activeProviderName = bodyProvider || ProviderType.NATIVE;
 
         // ── Native (email + password) auth ────────────────────────────────
         if (activeProviderName === ProviderType.NATIVE) {
@@ -95,60 +93,10 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ success: true, user: session.user });
         }
 
-        // ── Provider-based auth (Jellyfin / Emby / Plex / TMDB) ──────────
-        const baseDeviceId = crypto.randomUUID();
-        const deviceId = `${baseDeviceId}-${username}`;
-
-        logger.info(`[Auth] Attempting login for user: ${username} with deviceId: ${deviceId}`);
-
-        if (!provider.authenticate) {
-            return NextResponse.json({ message: "Authentication not supported by this provider" }, { status: 400 });
+        // Only native provider supported for /auth/login
+        if (activeProviderName !== ProviderType.NATIVE) {
+            return NextResponse.json({ message: "Only native login is supported" }, { status: 400 });
         }
-
-        const authResult = await provider.authenticate(username, password, deviceId, providerConfig?.serverUrl || providerConfig?.tmdbToken);
-
-        const userId = authResult.User?.Id || authResult.id;
-        const userName = authResult.User?.Name || authResult.name;
-        const accessToken = authResult.AccessToken || authResult.accessToken;
-
-        logger.info("[Auth] Provider accepted credentials. User ID:", userId);
-
-        const existingAdmin = await ConfigService.getAdminUserId(activeProviderName);
-        let wasMadeAdmin = false;
-        if (!existingAdmin && provider.capabilities.hasAuth) {
-            await ConfigService.setAdminUserId(userId, activeProviderName as any);
-            wasMadeAdmin = true;
-            logger.info(`[Auth] User ${userName} (${userId}) set as initial admin for ${activeProviderName}.`);
-        }
-
-        const session = await getValidatedSession();
-
-        session.user = {
-            Id: userId,
-            Name: userName,
-            AccessToken: accessToken,
-            DeviceId: deviceId,
-            isAdmin: await AuthService.isAdmin(userId, userName, activeProviderName),
-            wasMadeAdmin: wasMadeAdmin,
-            provider: activeProviderName,
-            providerConfig: providerConfig,
-        };
-        session.isLoggedIn = true;
-
-        if (profilePicture) {
-            try {
-                const { saveProfilePicture } = await import("@/lib/server/profile-picture");
-                const base64Data = profilePicture.replace(/^data:image\/\w+;base64,/, "");
-                const buffer = Buffer.from(base64Data, 'base64');
-                await saveProfilePicture(userId, buffer, "image/webp");
-            } catch (e) {
-                logger.error("[Auth] Failed to save profile picture:", e);
-            }
-        }
-
-        await session.save();
-        logger.info("[Auth] Session cookie saved.");
-        return NextResponse.json({ success: true, user: session.user, wasMadeAdmin });
 
     } catch (error) {
         const errorMessage = error instanceof Error ? error.message : "Unknown error";

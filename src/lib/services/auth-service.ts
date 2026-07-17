@@ -85,18 +85,12 @@ export class AuthService {
     if (isGuest) return false;
 
     const activeProvider = (provider || await ConfigService.getActiveProvider()) as ProviderType;
-    const capabilities = PROVIDER_CAPABILITIES[activeProvider] || PROVIDER_CAPABILITIES[ProviderType.JELLYFIN];
+    const capabilities = PROVIDER_CAPABILITIES[activeProvider] || PROVIDER_CAPABILITIES[ProviderType.NATIVE];
     
     if (!capabilities.hasAuth) return false;
 
     if (username) {
-      let targetAdmin = appConfig.auth.adminUsername;
-      if (provider && provider !== appConfig.app.provider) {
-        const p = provider.toLowerCase() as ProviderType;
-        if (p === ProviderType.JELLYFIN) targetAdmin = appConfig.JELLYFIN_ADMIN_USERNAME || appConfig.ADMIN_USERNAME;
-        else if (p === ProviderType.EMBY) targetAdmin = appConfig.EMBY_ADMIN_USERNAME || appConfig.ADMIN_USERNAME;
-        else if (p === ProviderType.PLEX) targetAdmin = appConfig.PLEX_ADMIN_USERNAME || appConfig.ADMIN_USERNAME;
-      }
+      const targetAdmin = appConfig.auth.adminUsername;
       if (targetAdmin && username.toLowerCase() === targetAdmin.toLowerCase()) return true;
     }
 

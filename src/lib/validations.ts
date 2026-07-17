@@ -7,16 +7,7 @@ export const loginSchema = z.object({
   password: z.string().optional(),
   provider: z.string().optional(),
   config: z.object({
-    serverUrl: z.string().optional().refine((value) => {
-      if (!value) return true;
-      try {
-        const source = config.app.providerLock ? "env" : "user";
-        assertSafeUrl(value, { source });
-        return true;
-      } catch {
-        return false;
-      }
-    }, "Invalid or blocked server URL"),
+    serverUrl: z.string().optional(),
     tmdbToken: z.string().optional(),
   }).optional(),
   profilePicture: z.string().optional(), // Base64 encoded
