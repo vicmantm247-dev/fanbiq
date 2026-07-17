@@ -51,6 +51,11 @@ async function fetchGoogleUser(idToken: string, accessToken: string) {
 
 export async function GET(request: NextRequest) {
   try {
+    let redirectUri = `${request.nextUrl.origin}${config.app.basePath || ""}/api/auth/google/callback`;
+    // log the incoming request for debugging
+    logger.info(`[Auth] Google callback invoked: ${request.nextUrl.href}`);
+    logger.info(`[Auth] Using redirectUri: ${redirectUri}`);
+    
     const code = request.nextUrl.searchParams.get("code");
     const state = request.nextUrl.searchParams.get("state");
 
@@ -68,7 +73,7 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    const redirectUri = `${request.nextUrl.origin}${config.app.basePath || ""}/api/auth/google/callback`;
+    redirectUri = `${request.nextUrl.origin}${config.app.basePath || ""}/api/auth/google/callback`;
     const tokens = await getGoogleTokens(code, redirectUri);
     const userInfo = await fetchGoogleUser(tokens.id_token, tokens.access_token);
 
@@ -119,11 +124,14 @@ export async function GET(request: NextRequest) {
     return NextResponse.redirect(callbackUrl);
   } catch (error) {
     logger.error("Google callback failed", error);
-    // In development return the underlying error message to aid debugging.
-    const isDev = (config.NODE_ENV || 'development') === 'development';
     const errMessage = error instanceof Error ? error.message : String(error);
-    const body: any = { error: "Google login failed." };
-    if (isDev) body.details = errMessage;
+    const body: any = {
+      error: "Google login failed.",
+      details: errMessage,
+      redirectUri: typeof redirectUri === 'string' ? redirectUri : undefined,
+      requestUrl: request.nextUrl.href,
+    };
+    // Return debug details so you can inspect the failure when testing against production domain.
     return NextResponse.json(body, { status: 500 });
   }
 }
