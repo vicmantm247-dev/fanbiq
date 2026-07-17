@@ -1,6 +1,7 @@
 "use client";
 import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import Link from "next/link";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -8,6 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { PasswordInput } from "@/components/ui/password-input";
 import { Button } from "@/components/ui/button";
+import { SiGoogle } from "react-icons/si";
 import { Label } from "@/components/ui/label";
 import { CardDescription } from "@/components/ui/card";
 import { toast } from "sonner";
@@ -158,6 +160,7 @@ export function NativeView() {
   const { basePath } = useRuntimeConfig();
   const searchParams = useSearchParams();
   const [tab, setTab] = useState("login");
+  const [authStep, setAuthStep] = useState<"choice" | "email">("choice");
   const [pendingVerification, setPendingVerification] = useState<{
     userId: string;
     email: string;
@@ -235,6 +238,12 @@ export function NativeView() {
     );
   });
 
+  const handleContinueWithGoogle = () => {
+    const callbackUrl = searchParams.get("callbackUrl") || `${basePath}/`;
+    const googleUrl = `${basePath}/api/auth/google?callbackUrl=${encodeURIComponent(callbackUrl)}`;
+    window.location.href = googleUrl;
+  };
+
   // ── OTP step takes over when pending ────────────────────────────────────
   if (pendingVerification) {
     return (
@@ -245,116 +254,190 @@ export function NativeView() {
     );
   }
 
-  return (
-    <Tabs value={tab} onValueChange={setTab} className="w-full">
-      <TabsList className="grid w-full grid-cols-2 mb-4">
-        <TabsTrigger value="login">Log in</TabsTrigger>
-        <TabsTrigger value="signup">Sign up</TabsTrigger>
-      </TabsList>
+  return authStep === "choice" ? (
+    <div className="space-y-6">
+      <div className="space-y-3 text-center">
+        <h2 className="text-xl font-semibold">Continue with</h2>
+        <p className="text-sm text-muted-foreground">
+          Choose how you want to sign in to fanbIQ.
+        </p>
+      </div>
 
-      {/* ── Login Tab ── */}
-      <TabsContent value="login" className="space-y-4">
-        <form onSubmit={handleLogin} className="space-y-3">
-          <CardDescription>Enter your email or username to continue</CardDescription>
+      <Button
+        variant="outline"
+        className="w-full flex items-center justify-center gap-2"
+        onClick={handleContinueWithGoogle}
+      >
+        <SiGoogle className="w-5 h-5" />
+        Continue with Google
+      </Button>
 
-          <div className="space-y-1">
-            <Input
-              placeholder="Email or username"
-              autoComplete="email"
-              {...loginForm.register("emailOrUsername")}
-              className="bg-muted border-input"
-            />
-            {loginForm.formState.errors.emailOrUsername && (
-              <p className="text-xs text-destructive">{loginForm.formState.errors.emailOrUsername.message}</p>
-            )}
-          </div>
+      <Button
+        variant="secondary"
+        className="w-full"
+        onClick={() => setAuthStep("email")}
+      >
+        Login / Sign up with email
+      </Button>
 
-          <div className="space-y-1">
-            <PasswordInput
-              placeholder="Password"
-              autoComplete="current-password"
-              {...loginForm.register("password")}
-            />
-            {loginForm.formState.errors.password && (
-              <p className="text-xs text-destructive">{loginForm.formState.errors.password.message}</p>
-            )}
-          </div>
+      <div className="text-sm text-center text-muted-foreground">
+        By continuing, you agree to our{' '}
+        <Link
+          href="/terms"
+          className="text-primary hover:underline"
+        >
+          Terms & Conditions
+        </Link>.
+      </div>
+    </div>
+  ) : (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-lg font-semibold">Email login</h2>
+        </div>
+        <Button
+          variant="ghost"
+          className="text-sm"
+          onClick={() => setAuthStep("choice")}
+        >
+          Back
+        </Button>
+      </div>
 
-          <Button
-            type="submit"
-            className="w-full mt-2 font-semibold"
-            disabled={loginForm.formState.isSubmitting}
-          >
-            {loginForm.formState.isSubmitting ? "Logging in..." : "Log in"}
-          </Button>
-        </form>
-      </TabsContent>
+      <Tabs value={tab} onValueChange={setTab} className="w-full">
+        <TabsList className="grid w-full grid-cols-2 mb-4">
+          <TabsTrigger value="login">Log in</TabsTrigger>
+          <TabsTrigger value="signup">Sign up</TabsTrigger>
+        </TabsList>
 
-      {/* ── Signup Tab ── */}
-      <TabsContent value="signup" className="space-y-4">
-        <form onSubmit={handleSignup} className="space-y-3">
-          <CardDescription>Create an account to start swiping</CardDescription>
+        <TabsContent value="login" className="space-y-4">
+          <form onSubmit={handleLogin} className="space-y-3">
+            <CardDescription>Enter your email or username to continue</CardDescription>
 
-          <div className="space-y-1">
-            <Label className="text-xs text-muted-foreground">Email</Label>
-            <Input
-              placeholder="you@example.com"
-              autoComplete="email"
-              type="email"
-              {...signupForm.register("email")}
-              className="bg-muted border-input"
-            />
-            {signupForm.formState.errors.email && (
-              <p className="text-xs text-destructive">{signupForm.formState.errors.email.message}</p>
-            )}
-          </div>
+            <div className="space-y-1">
+              <Input
+                placeholder="Email or username"
+                autoComplete="email"
+                {...loginForm.register("emailOrUsername")}
+                className="bg-muted border-input"
+              />
+              {loginForm.formState.errors.emailOrUsername && (
+                <p className="text-xs text-destructive">{loginForm.formState.errors.emailOrUsername.message}</p>
+              )}
+            </div>
 
-          <div className="space-y-1">
-            <Label className="text-xs text-muted-foreground">Username</Label>
-            <Input
-              placeholder="cooluser42"
-              autoComplete="username"
-              {...signupForm.register("username")}
-              className="bg-muted border-input"
-            />
-            {signupForm.formState.errors.username && (
-              <p className="text-xs text-destructive">{signupForm.formState.errors.username.message}</p>
-            )}
-          </div>
+            <div className="space-y-1">
+              <PasswordInput
+                placeholder="Password"
+                autoComplete="current-password"
+                {...loginForm.register("password")}
+              />
+              {loginForm.formState.errors.password && (
+                <p className="text-xs text-destructive">{loginForm.formState.errors.password.message}</p>
+              )}
+            </div>
 
-          <div className="space-y-1">
-            <Label className="text-xs text-muted-foreground">Password</Label>
-            <PasswordInput
-              placeholder="Min 8 characters"
-              autoComplete="new-password"
-              {...signupForm.register("password")}
-            />
-            {signupForm.formState.errors.password && (
-              <p className="text-xs text-destructive">{signupForm.formState.errors.password.message}</p>
-            )}
-          </div>
+            <Button
+              type="submit"
+              className="w-full mt-2 font-semibold"
+              disabled={loginForm.formState.isSubmitting}
+            >
+              {loginForm.formState.isSubmitting ? "Logging in..." : "Log in"}
+            </Button>
 
-          <div className="space-y-1">
-            <Label className="text-xs text-muted-foreground">Confirm password</Label>
-            <PasswordInput
-              placeholder="Repeat password"
-              autoComplete="new-password"
-              {...signupForm.register("confirmPassword")}
-            />
-            {signupForm.formState.errors.confirmPassword && (
-              <p className="text-xs text-destructive">{signupForm.formState.errors.confirmPassword.message}</p>
-            )}
-          </div>
+            <div className="flex flex-wrap justify-between gap-2 text-sm text-primary mt-2">
+              <Link
+                href="/forgot-password"
+                className="hover:underline focus-visible:outline-none focus-visible:ring focus-visible:ring-primary/50"
+              >
+                Forgot password?
+              </Link>
+              <Link
+                href="/terms"
+                className="hover:underline focus-visible:outline-none focus-visible:ring focus-visible:ring-primary/50"
+              >
+                Terms & Conditions
+              </Link>
+            </div>
+          </form>
+        </TabsContent>
 
-          <Button
-            type="submit"
-            className="w-full mt-2 font-semibold"
-            disabled={signupForm.formState.isSubmitting}
-          >
-            {signupForm.formState.isSubmitting ? "Creating account..." : "Create account"}
-          </Button>
-        </form>
-      </TabsContent>
-    </Tabs>
+        <TabsContent value="signup" className="space-y-4">
+          <form onSubmit={handleSignup} className="space-y-3">
+            <CardDescription>Create an account to start swiping</CardDescription>
+
+            <div className="space-y-1">
+              <Label className="text-xs text-muted-foreground">Email</Label>
+              <Input
+                placeholder="you@example.com"
+                autoComplete="email"
+                type="email"
+                {...signupForm.register("email")}
+                className="bg-muted border-input"
+              />
+              {signupForm.formState.errors.email && (
+                <p className="text-xs text-destructive">{signupForm.formState.errors.email.message}</p>
+              )}
+            </div>
+
+            <div className="space-y-1">
+              <Label className="text-xs text-muted-foreground">Username</Label>
+              <Input
+                placeholder="cooluser42"
+                autoComplete="username"
+                {...signupForm.register("username")}
+                className="bg-muted border-input"
+              />
+              {signupForm.formState.errors.username && (
+                <p className="text-xs text-destructive">{signupForm.formState.errors.username.message}</p>
+              )}
+            </div>
+
+            <div className="space-y-1">
+              <Label className="text-xs text-muted-foreground">Password</Label>
+              <PasswordInput
+                placeholder="Min 8 characters"
+                autoComplete="new-password"
+                {...signupForm.register("password")}
+              />
+              {signupForm.formState.errors.password && (
+                <p className="text-xs text-destructive">{signupForm.formState.errors.password.message}</p>
+              )}
+            </div>
+
+            <div className="space-y-1">
+              <Label className="text-xs text-muted-foreground">Confirm password</Label>
+              <PasswordInput
+                placeholder="Repeat password"
+                autoComplete="new-password"
+                {...signupForm.register("confirmPassword")}
+              />
+              {signupForm.formState.errors.confirmPassword && (
+                <p className="text-xs text-destructive">{signupForm.formState.errors.confirmPassword.message}</p>
+              )}
+            </div>
+
+            <Button
+              type="submit"
+              className="w-full mt-2 font-semibold"
+              disabled={signupForm.formState.isSubmitting}
+            >
+              {signupForm.formState.isSubmitting ? "Creating account..." : "Create account"}
+            </Button>
+
+            <div className="flex flex-wrap justify-between gap-2 text-sm text-primary mt-2">
+              <span />
+              <Link
+                href="/terms"
+                className="hover:underline focus-visible:outline-none focus-visible:ring focus-visible:ring-primary/50"
+              >
+                Terms & Conditions
+              </Link>
+            </div>
+          </form>
+        </TabsContent>
+      </Tabs>
+    </div>
   );
 }

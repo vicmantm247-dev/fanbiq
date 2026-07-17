@@ -56,6 +56,10 @@ const envSchema = z.object({
   USE_ANALYTICS: z.preprocess((val) => val === 'true', z.boolean()).default(false),
   ENABLE_DEBUG: z.preprocess((val) => val === 'true' || val === true, z.boolean()).default(false),
 
+  // Google OAuth
+  GOOGLE_CLIENT_ID: z.string().optional(),
+  GOOGLE_CLIENT_SECRET: z.string().optional(),
+
   // Native auth (email/password)
   RESEND_API_KEY: z.string().optional(),
   FROM_EMAIL: z.string().optional(),
@@ -122,6 +126,8 @@ export const config = {
     secret: parsedEnv.AUTH_SECRET,
     secureCookies: parsedEnv.USE_SECURE_COOKIES,
     adminUsername: ADMIN_USERNAME,
+    googleClientId: parsedEnv.GOOGLE_CLIENT_ID,
+    googleClientSecret: parsedEnv.GOOGLE_CLIENT_SECRET,
   },
   security: {
     allowPrivateProviderUrls: parsedEnv.ALLOW_PRIVATE_PROVIDER_URLS,

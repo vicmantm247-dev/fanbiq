@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { GITHUB_URL, MESSER_STUDIOS_URL, SUPPORT_URL } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 
@@ -32,6 +33,12 @@ export function Footer({ className }: FooterProps) {
       >
         Open Source
       </a>
+
+      <span className="mx-2">•</span>
+
+      <Link href="/terms" className="hover:text-primary transition-colors">
+        Terms
+      </Link>
 
       {/* Hide this bullet on small screens since Messer goes to a new line */}
       <span className="mx-2 hidden sm:inline">•</span>

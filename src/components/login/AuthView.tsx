@@ -1,4 +1,5 @@
 import { useState } from "react";
+import Link from "next/link";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { PasswordInput } from "@/components/ui/password-input";
@@ -249,6 +250,14 @@ export function AuthView({
                   onChange={(e) => setPassword(e.target.value)}
                 />
 
+                {provider === ProviderType.NATIVE && (
+                  <div className="flex justify-end">
+                    <Link href="/forgot-password" className="text-sm font-medium text-primary hover:underline">
+                      Forgot password?
+                    </Link>
+                  </div>
+                )}
+
                 <Button type="submit" className="w-full mt-2 font-semibold" disabled={loading}>
                   {loading ? "Connecting..." : "Log in"}
                 </Button>
@@ -276,6 +285,7 @@ export function AuthView({
                 </Button>
               </>
             )}
+
             {isExperimental && (
               <Alert className="max-w-full mt-2 ">
                 <AlertTriangleIcon className="text-amber-600!"/>

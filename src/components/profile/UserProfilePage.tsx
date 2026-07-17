@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { ChevronLeft, Search, MoreVertical, Edit2, ArrowUpRight, Loader2, BadgeCheck } from "lucide-react";
+import { ChevronLeft, Search, MoreVertical, Users, Edit2, Copy, Loader2, BadgeCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ProfilePicturePicker } from "./ProfilePicturePicker";
 import { Badge } from "@/components/ui/badge";
@@ -187,6 +187,63 @@ export default function UserProfilePage({
     }
   }, [isOwner, username, following]);
 
+  const handleShareProfile = useCallback(async () => {
+    const profileUrl = `${window.location.origin}/profile/${encodeURIComponent(username)}`;
+
+    const fallbackCopyText = (text: string) => {
+      const textarea = document.createElement("textarea");
+      textarea.value = text;
+      textarea.style.position = "fixed";
+      textarea.style.left = "-9999px";
+      textarea.style.top = "-9999px";
+      textarea.readOnly = true;
+      document.body.appendChild(textarea);
+      textarea.select();
+
+      let successful = false;
+      try {
+        successful = document.execCommand("copy");
+      } catch {
+        successful = false;
+      }
+
+      document.body.removeChild(textarea);
+      return successful;
+    };
+
+    const copyToClipboard = async (text: string) => {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        try {
+          await navigator.clipboard.writeText(text);
+          return true;
+        } catch {
+          // fallback to execCommand
+        }
+      }
+      return fallbackCopyText(text);
+    };
+
+    try {
+      if (navigator.share) {
+        await navigator.share({
+          title: `${displayName}'s fanbIQ profile`,
+          text: `Check out ${displayName}'s profile on fanbIQ.`,
+          url: profileUrl,
+        });
+        toast.success("Profile link shared");
+        return;
+      }
+
+      const success = await copyToClipboard(profileUrl);
+      if (!success) {
+        throw new Error("copy failed");
+      }
+      toast.success("Profile URL copied to clipboard");
+    } catch (error) {
+      toast.error("Unable to share profile URL");
+    }
+  }, [username, displayName]);
+
   return (
     <>
       <style>{`
@@ -199,17 +256,20 @@ export default function UserProfilePage({
       <div className="h-screen overflow-y-auto bg-background overscroll-contain">
         {/* Top Nav */}
         <div className="flex items-center justify-between px-4 py-2 bg-background">
-            <Button variant="ghost" size="icon" className="p-3">
-              <ChevronLeft className="w-6 h-6" />
-            </Button>
-            <div className="flex items-center gap-1">
-              <Button variant="ghost" size="icon" className="p-3">
-                <Search className="w-6 h-6" />
-              </Button>
-              <Button variant="ghost" size="icon" className="p-3">
-                <MoreVertical className="w-6 h-6" />
-                </Button>
-          </div>
+          <Button
+            variant="ghost"
+            onClick={() => router.back()}
+          >
+            <ChevronLeft className="w-5 h-5 mr-2" strokeWidth={3} />
+            Back
+          </Button>
+
+          <Button
+            variant="ghost"
+            onClick={() => window.dispatchEvent(new Event("fanbiq:open-session"))}
+          >
+            <Users className="w-5 h-5 mr-2" strokeWidth={3} />
+          </Button>
         </div>
 
         {/* Profile Header */}
@@ -266,8 +326,8 @@ export default function UserProfilePage({
                     Edit profile
                   </Button>
                 </Link>
-                <Button variant="outline" size="icon">
-                  <ArrowUpRight className="w-4 h-4" />
+                <Button variant="outline" size="icon" onClick={handleShareProfile} aria-label="Share profile">
+                  <Copy className="w-4 h-4" />
                 </Button>
               </>
             ) : (
@@ -288,8 +348,8 @@ export default function UserProfilePage({
                     "Follow"
                   )}
                 </Button>
-                <Button variant="outline" size="icon">
-                  <ArrowUpRight className="w-4 h-4" />
+                <Button variant="outline" size="icon" onClick={handleShareProfile} aria-label="Share profile">
+                  <Copy className="w-4 h-4" />
                 </Button>
               </>
             )}
