@@ -111,7 +111,9 @@ export async function GET(request: NextRequest) {
       userId = uuidv4();
       username = normalizedUsername || `google_${userId.slice(0, 8)}`;
 
-      const insertUser = { id: userId, email, username, displayName, isVerified: true } as any;
+      // `passwordHash` is NOT NULL in the schema; for OAuth-created accounts we
+      // store an empty string as a placeholder since authentication is handled by Google.
+      const insertUser = { id: userId, email, username, passwordHash: '', displayName, isVerified: true } as any;
       await db.insert(nativeUsers).values(insertUser);
       logger.info(`[Auth] Created native user for Google login: ${email}`);
     }
