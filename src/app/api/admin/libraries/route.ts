@@ -1,7 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getIronSession } from "iron-session";
-import { getSessionOptions } from "@/lib/session";
-import { cookies } from "next/headers";
+import { getValidatedSession } from "@/lib/server/validate-session";
 import { SessionData } from "@/types";
 import { EventService } from "@/lib/services/event-service";
 import { EVENT_TYPES } from "@/lib/events";
@@ -12,8 +10,7 @@ import { libraryUpdateSchema } from "@/lib/validations";
 import { tagProvider } from "@/lib/cache-tags";
 
 export async function GET() {
-    const cookieStore = await cookies();
-    const session = await getIronSession<SessionData>(cookieStore, await getSessionOptions());
+    const session = await getValidatedSession();
 
     if (!session.isLoggedIn || !session.user.Id || !(await AuthService.isAdmin(session.user.Id, session.user.Name, session.user.provider, !!session.user.isGuest))) {
         return new NextResponse("Unauthorized", { status: 401 });
@@ -24,8 +21,7 @@ export async function GET() {
 }
 
 export async function PATCH(request: NextRequest) {
-    const cookieStore = await cookies();
-    const session = await getIronSession<SessionData>(cookieStore, await getSessionOptions());
+    const session = await getValidatedSession();
 
     if (!session.isLoggedIn || !session.user.Id || !(await AuthService.isAdmin(session.user.Id, session.user.Name, session.user.provider, !!session.user.isGuest))) {
         return new NextResponse("Unauthorized", { status: 401 });
@@ -55,3 +51,4 @@ export async function PATCH(request: NextRequest) {
         return NextResponse.json({ error: "Failed to update libraries" }, { status: 500 });
     }
 }
+

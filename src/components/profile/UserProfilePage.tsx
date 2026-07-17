@@ -226,8 +226,8 @@ export default function UserProfilePage({
     try {
       if (navigator.share) {
         await navigator.share({
-          title: `${displayName}'s fanbIQ profile`,
-          text: `Check out ${displayName}'s profile on fanbIQ.`,
+          title: `${displayName}'s fanbiq profile`,
+          text: `Check out ${displayName}'s profile on fanbiq.`,
           url: profileUrl,
         });
         toast.success("Profile link shared");

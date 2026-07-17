@@ -1,7 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getIronSession } from "iron-session";
-import { getSessionOptions } from "@/lib/session";
-import { cookies } from "next/headers";
+import { getValidatedSession } from "@/lib/server/validate-session";
 import { SessionData } from "@/types";
 import { AuthService } from "@/lib/services/auth-service";
 import { getMediaProvider } from "@/lib/providers/factory";
@@ -10,8 +8,7 @@ import { ProviderType } from "@/lib/providers/types";
 import { watchlistSchema } from "@/lib/validations";
 
 export async function POST(request: NextRequest) {
-  const cookieStore = await cookies();
-  const session = await getIronSession<SessionData>(cookieStore, await getSessionOptions());
+  const session = await getValidatedSession();
   if (!session.isLoggedIn) return new NextResponse("Unauthorized", { status: 401 });
 
   if (session.user.isGuest) {
@@ -44,3 +41,4 @@ export async function POST(request: NextRequest) {
     return handleApiError(error, "Failed to update watchlist/favorites");
   }
 }
+

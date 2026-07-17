@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getIronSession } from "iron-session";
-import { cookies } from "next/headers";
+import { getValidatedSession } from "@/lib/server/validate-session";
 import { getProfilePicture } from "@/lib/server/profile-picture";
-import { getSessionOptions } from "@/lib/session";
 import { AuthService } from "@/lib/services/auth-service";
 import { getMediaProvider } from "@/lib/providers/factory";
 import { logger } from "@/lib/logger";
@@ -53,8 +51,7 @@ export async function GET(
             return new NextResponse("User image not found", { status: 404 });
         }
 
-        const cookieStore = await cookies();
-        const session = await getIronSession<SessionData>(cookieStore, await getSessionOptions());
+        const session = await getValidatedSession();
         let auth;
 
         try {

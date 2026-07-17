@@ -1,8 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getIronSession } from "iron-session";
-import { cookies } from "next/headers";
-import { getSessionOptions } from "@/lib/session";
-import { SessionData } from "@/types";
+import { getValidatedSession } from "@/lib/server/validate-session";
 import { AuthService } from "@/lib/services/auth-service";
 import { getMediaProvider } from "@/lib/providers/factory";
 import { handleApiError } from "@/lib/api-utils";
@@ -13,8 +10,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     return new NextResponse("Invalid ID", { status: 400 });
   }
 
-  const cookieStore = await cookies();
-  const session = await getIronSession<SessionData>(cookieStore, await getSessionOptions());
+  const session = await getValidatedSession();
   if (!session.isLoggedIn) return new NextResponse("Unauthorized", { status: 401 });
 
   try {

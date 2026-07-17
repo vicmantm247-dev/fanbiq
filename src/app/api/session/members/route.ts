@@ -1,14 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getIronSession } from "iron-session";
-import { getSessionOptions } from "@/lib/session";
+import { getValidatedSession } from "@/lib/server/validate-session";
 import { db, sessionMembers, userProfiles, sessions } from "@/lib/db";
 import { eq, sql } from "drizzle-orm";
-import { cookies } from "next/headers";
 import { SessionData } from "@/types";
 
 export async function GET(request: NextRequest) {
-    const cookieStore = await cookies();
-    const session = await getIronSession<SessionData>(cookieStore, await getSessionOptions());
+    const session = await getValidatedSession();
     
     if (!session.isLoggedIn || !session.sessionCode) {
         return NextResponse.json([]);
@@ -29,3 +26,4 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json(members);
 }
+

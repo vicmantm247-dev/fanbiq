@@ -1,15 +1,12 @@
 import { NextResponse } from "next/server";
-import { getIronSession } from "iron-session";
-import { getSessionOptions } from "@/lib/session";
-import { cookies } from "next/headers";
+import { getValidatedSession } from "@/lib/server/validate-session";
 import { SessionData } from "@/types";
 import { getMediaProvider } from "@/lib/providers/factory";
 import { db, config as configTable } from "@/lib/db";
 import { eq } from "drizzle-orm";
 
 export async function POST() {
-    const cookieStore = await cookies();
-    const session = await getIronSession<SessionData>(cookieStore, await getSessionOptions());
+    const session = await getValidatedSession();
 
     if (!session.isLoggedIn) {
         return new NextResponse("Unauthorized", { status: 401 });
@@ -55,3 +52,4 @@ export async function POST() {
         return NextResponse.json({ error: "Failed to claim admin role" }, { status: 500 });
     }
 }
+

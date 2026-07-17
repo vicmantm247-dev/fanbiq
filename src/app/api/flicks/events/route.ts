@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getIronSession } from 'iron-session';
-import { cookies } from 'next/headers';
+import { getValidatedSession } from "@/lib/server/validate-session";
 import { z } from 'zod';
-import { getSessionOptions } from '@/lib/session';
 import { SessionData } from '@/types';
 import { FlickPersonalizationService } from '@/lib/services/flick-personalization-service';
 
@@ -24,8 +22,7 @@ const eventSchema = z.object({
 });
 
 export async function POST(request: NextRequest) {
-  const cookieStore = await cookies();
-  const session = await getIronSession<SessionData>(cookieStore, await getSessionOptions());
+  const session = await getValidatedSession();
   if (!session.isLoggedIn) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
@@ -43,3 +40,4 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Failed to record interaction' }, { status: 500 });
   }
 }
+

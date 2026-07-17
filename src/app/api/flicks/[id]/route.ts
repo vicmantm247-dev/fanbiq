@@ -1,16 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getIronSession } from "iron-session";
-import { cookies } from "next/headers";
-import { getSessionOptions } from "@/lib/session";
-import { SessionData } from "@/types";
+import { getValidatedSession } from "@/lib/server/validate-session";
 import { db, flicks } from "@/lib/db";
 import { eq } from "drizzle-orm";
 import { logger } from "@/lib/logger";
 
 export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id: flickId } = await params;
-  const cookieStore = await cookies();
-  const session = await getIronSession<SessionData>(cookieStore, await getSessionOptions());
+  const session = await getValidatedSession();
 
   if (!session.isLoggedIn || !session.user?.Name) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

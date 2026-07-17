@@ -1,9 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getIronSession } from "iron-session";
-import { getSessionOptions } from "@/lib/session";
+import { getValidatedSession } from "@/lib/server/validate-session";
 import { db, likes as likesTable, sessionMembers, userProfiles, type Like } from "@/lib/db";
 import { eq, and, isNotNull, isNull, desc, inArray, sql } from "drizzle-orm";
-import { cookies } from "next/headers";
 import { SessionData, type MediaItem, type MergedLike } from "@/types";
 import { EventService } from "@/lib/services/event-service";
 import { EVENT_TYPES } from "@/lib/events";
@@ -13,8 +11,7 @@ import { handleApiError } from "@/lib/api-utils";
 import { logger } from "@/lib/logger";
 
 export async function GET(request: NextRequest) {
-  const cookieStore = await cookies();
-  const session = await getIronSession<SessionData>(cookieStore, await getSessionOptions());
+  const session = await getValidatedSession();
   if (!session.isLoggedIn) return new NextResponse("Unauthorized", { status: 401 });
 
   const { searchParams } = new URL(request.url);
@@ -122,8 +119,7 @@ export async function GET(request: NextRequest) {
 }
 
 export async function DELETE(request: NextRequest) {
-  const cookieStore = await cookies();
-  const session = await getIronSession<SessionData>(cookieStore, await getSessionOptions());
+  const session = await getValidatedSession();
   if (!session.isLoggedIn) return new NextResponse("Unauthorized", { status: 401 });
 
   const { searchParams } = new URL(request.url);
@@ -174,3 +170,4 @@ export async function DELETE(request: NextRequest) {
     return handleApiError(error, "Failed to delete like");
   }
 }
+

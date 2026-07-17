@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
-import { eq } from "drizzle-orm";
+import { eq, desc } from "drizzle-orm";
 import { db, nativeUsers, verificationTokens } from "@/db";
 import { sendVerificationEmail } from "@/lib/email";
 import { logger } from "@/lib/logger";
@@ -44,7 +44,9 @@ export async function POST(request: NextRequest) {
       .select()
       .from(verificationTokens)
       .where(eq(verificationTokens.userId, userId))
-      .then((r: typeof verificationTokens.$inferSelect[]) => r[r.length - 1]);
+      .orderBy(desc(verificationTokens.createdAt))
+      .limit(1)
+      .then((r: typeof verificationTokens.$inferSelect[]) => r[0]);
 
     if (lastToken) {
       const lastCreated = new Date(lastToken.createdAt);

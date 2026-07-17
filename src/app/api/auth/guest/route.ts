@@ -1,7 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getIronSession } from "iron-session";
-import { getSessionOptions } from "@/lib/session";
-import { cookies } from "next/headers";
+import { getValidatedSession } from "@/lib/server/validate-session";
 import { SessionData } from "@/types";
 import { guestLoginSchema } from "@/lib/validations";
 import { getRuntimeConfig } from "@/lib/runtime-config";
@@ -23,8 +21,7 @@ export async function POST(request: NextRequest) {
 
         const { user, code } = await SessionService.loginGuest(username, sessionCode, capabilities);
         
-        const cookieStore = await cookies();
-        const session = await getIronSession<SessionData>(cookieStore, await getSessionOptions());
+        const session = await getValidatedSession();
 
         session.user = user;
         session.isLoggedIn = true;

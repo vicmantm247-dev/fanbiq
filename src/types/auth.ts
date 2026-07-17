@@ -10,6 +10,7 @@ export interface UserSession {
   wasMadeAdmin?: boolean;
   isGuest?: boolean;
   provider?: string;
+  sessionVersion?: number;
   providerConfig?: {
     serverUrl?: string;
     machineId?: string;

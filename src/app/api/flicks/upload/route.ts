@@ -2,9 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { createHash } from 'node:crypto';
 import { NextRequest, NextResponse } from "next/server";
-import { getIronSession } from "iron-session";
-import { getSessionOptions } from "@/lib/session";
-import { cookies } from "next/headers";
+import { getValidatedSession } from "@/lib/server/validate-session";
 import { SessionData } from "@/types";
 import { logger } from "@/lib/logger";
 import { getErrorMessage } from "@/lib/utils";
@@ -14,8 +12,7 @@ import { config } from "@/lib/config";
 
 export async function POST(request: NextRequest) {
   try {
-    const cookieStore = await cookies();
-    const session = await getIronSession<SessionData>(cookieStore, await getSessionOptions());
+    const session = await getValidatedSession();
 
     if (!session.isLoggedIn) {
       return NextResponse.json(
@@ -190,3 +187,4 @@ export async function POST(request: NextRequest) {
     );
   }
 }
+

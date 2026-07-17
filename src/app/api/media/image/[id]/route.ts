@@ -1,11 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getIronSession } from "iron-session";
-import { cookies } from "next/headers";
-import { getSessionOptions } from "@/lib/session";
-import { SessionData } from "@/types";
+import { getValidatedSession } from "@/lib/server/validate-session";
 import { getMediaProvider } from "@/lib/providers/factory";
 import { AuthService } from "@/lib/services/auth-service";
 import { db, userProfiles } from "@/lib/db";
+import { SessionData } from "@/types";
 import { eq } from "drizzle-orm";
 import { logger } from "@/lib/logger";
 import { ProviderType } from "@/lib/providers/types";
@@ -21,13 +19,12 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
   const imageType = searchParams.get("imageType") || "Primary";
   const tag = searchParams.get("tag") === "undefined" ? null : searchParams.get("tag");
 
-  const cookieStore = await cookies();
-  const session = await getIronSession<SessionData>(cookieStore, await getSessionOptions());
+  const session = await getValidatedSession();
   
   let auth;
-  try {
-      auth = await AuthService.getEffectiveCredentials(session);
-  } catch (e) {
+    try {
+      auth = await AuthService.getEffectiveCredentials(session as SessionData);
+    } catch (e) {
       // Guest or no-auth might fail, that's okay for some providers like TMDB
   }
 

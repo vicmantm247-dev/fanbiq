@@ -3,6 +3,7 @@ import bcrypt from "bcryptjs";
 import { eq, sql } from "drizzle-orm";
 import { db, nativeUsers, verificationTokens } from "@/db";
 import { registerSchema } from "@/lib/validations";
+import { getClientIp, isRateLimitedKey } from "@/lib/rate-limit";
 import { sendVerificationEmail } from "@/lib/email";
 import { logger } from "@/lib/logger";
 import { handleApiError } from "@/lib/api-utils";
@@ -32,6 +33,19 @@ export async function POST(request: NextRequest) {
     const { email, username, password } = validated.data;
     const normalizedEmail = email.toLowerCase().trim();
     const normalizedUsername = username.trim().toLowerCase();
+
+    // Rate limiting: per-IP and per-email
+    const ip = getClientIp(request);
+    const ipLimit = isRateLimitedKey(`ip:${ip}`, 20, 60_000);
+    if (ipLimit.limited) {
+      return NextResponse.json({ message: "Too many requests" }, { status: 429, headers: { "Retry-After": String(ipLimit.retryAfter) } });
+    }
+
+    const emailKey = `email:${normalizedEmail}`;
+    const emailLimit = isRateLimitedKey(emailKey, 3, 60_000);
+    if (emailLimit.limited) {
+      return NextResponse.json({ message: "Too many registration attempts for this email" }, { status: 429, headers: { "Retry-After": String(emailLimit.retryAfter) } });
+    }
 
     // Check existing email
     const existingByEmail = await db

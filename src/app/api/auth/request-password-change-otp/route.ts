@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { eq } from "drizzle-orm";
+import { eq, desc } from "drizzle-orm";
+import bcrypt from "bcryptjs";
+import { getClientIp, isRateLimitedKey } from "@/lib/rate-limit";
 import { db, nativeUsers, verificationTokens } from "@/db";
 import { logger } from "@/lib/logger";
 import { getErrorMessage } from "@/lib/utils";
@@ -48,14 +50,52 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
-    // Generate OTP
+    // Rate limiting: per-IP and per-email/account
+    const ip = getClientIp(request);
+    const ipLimit = isRateLimitedKey(`ip:${ip}`, 20, 60_000);
+    if (ipLimit.limited) {
+      return NextResponse.json({ error: "Too many requests" }, { status: 429, headers: { "Retry-After": String(ipLimit.retryAfter) } });
+    }
+
+    // Rate limit: check if last token was created less than 60s ago
+    const lastToken = await db
+      .select()
+      .from(verificationTokens)
+      .where(eq(verificationTokens.userId, user.id))
+      .orderBy(desc(verificationTokens.createdAt))
+      .limit(1)
+      .then((r: typeof verificationTokens.$inferSelect[]) => r[0]);
+
+    if (lastToken) {
+      const lastCreated = new Date(lastToken.createdAt);
+      const secondsAgo = (Date.now() - lastCreated.getTime()) / 1000;
+      if (secondsAgo < 60) {
+        return NextResponse.json(
+          { error: `Please wait ${Math.ceil(60 - secondsAgo)} seconds before requesting a new code` },
+          { status: 429 }
+        );
+      }
+    }
+
+    // Per-account rate limiting
+    const acctKey = `acct:${user.email.toLowerCase().trim()}`;
+    const acctLimit = isRateLimitedKey(acctKey, 3, 60_000);
+    if (acctLimit.limited) {
+      return NextResponse.json({ error: "Too many OTP requests for this account" }, { status: 429, headers: { "Retry-After": String(acctLimit.retryAfter) } });
+    }
+
+    // Generate OTP and hash it before storing
     const otp = generateOTP();
     const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+    const otpHash = await bcrypt.hash(otp, 10);
 
-    // Store OTP token
+    // Ensure only one live token per user
+    await db.delete(verificationTokens).where(eq(verificationTokens.userId, user.id));
+
+    // Store hashed OTP token
     await db.insert(verificationTokens).values({
       userId: user.id,
-      token: otp,
+      token: otpHash,
       expiresAt,
     });
 

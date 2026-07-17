@@ -1,14 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import axios from "axios";
-import { getIronSession } from "iron-session";
-import { getSessionOptions } from "@/lib/session";
+import { getValidatedSession } from "@/lib/server/validate-session";
 import { SessionData } from "@/types";
 import { config } from "@/lib/config";
-import { db, nativeUsers } from "@/db";
+import { db, nativeUsers, verificationTokens } from "@/db";
 import { eq } from "drizzle-orm";
 import { v4 as uuidv4 } from "uuid";
 import { logger } from "@/lib/logger";
+import bcrypt from "bcryptjs";
+import { generateOTP } from "@/lib/utils";
+import { sendVerificationEmail } from "@/lib/email";
+import { usernameSchema } from "@/lib/validations";
 
 const GOOGLE_TOKEN_URL = "https://oauth2.googleapis.com/token";
 const GOOGLE_USERINFO_URL = "https://openidconnect.googleapis.com/v1/userinfo";
@@ -49,11 +52,22 @@ async function fetchGoogleUser(idToken: string, accessToken: string) {
   return response.data;
 }
 
-function normalizeUsername(email: string) {
-  return email
-    .split("@")[0]
-    .replace(/[^a-zA-Z0-9_]/g, "")
-    .slice(0, 30) || "google";
+async function deriveValidUsername(email: string) {
+  const base = email.split("@")[0].replace(/[^a-zA-Z0-9_]/g, "").slice(0, 30) || "google";
+  let candidate = base;
+  let attempt = 0;
+  while (attempt < 10) {
+    const validated = usernameSchema.safeParse(candidate);
+    if (validated.success) return candidate;
+    // pad with a random digit suffix to reach min length or valid pattern
+    const suffix = Math.floor(100 + Math.random() * 9000).toString();
+    candidate = (base + "_" + suffix).slice(0, 30);
+    attempt++;
+  }
+  // As a last resort, return a deterministic fallback that's valid
+  const fallback = (base + "_user").slice(0, 30);
+  const final = usernameSchema.safeParse(fallback).success ? fallback : `user${Date.now() % 10000}`;
+  return final;
 }
 
 async function insertUserWithRetry(user: {
@@ -61,6 +75,7 @@ async function insertUserWithRetry(user: {
   email: string;
   username: string;
   displayName: string;
+  isVerified?: boolean;
 }) {
   const baseUsername = user.username;
 
@@ -73,7 +88,8 @@ async function insertUserWithRetry(user: {
         username,
         passwordHash: "",
         displayName: user.displayName,
-        isVerified: true,
+        isVerified: !!user.isVerified,
+        sessionVersion: 1,
       } as any);
       return username;
     } catch (error: any) {
@@ -141,7 +157,7 @@ export async function GET(request: NextRequest) {
     const email = userInfo.email.toLowerCase();
     const displayName = userInfo.name || userInfo.email.split("@")[0];
 
-    const normalizedUsername = normalizeUsername(email);
+    const normalizedUsername = await deriveValidUsername(email);
     const existingUser = await db
       .select()
       .from(nativeUsers)
@@ -156,17 +172,47 @@ export async function GET(request: NextRequest) {
       username = existingUser.username;
     } else {
       userId = uuidv4();
+      // Respect Google's email_verified flag: only mark verified if Google says so
+      const isVerified = !!userInfo.email_verified;
+
       username = await insertUserWithRetry({
         id: userId,
         email,
         username: normalizedUsername,
         displayName,
+        isVerified,
       });
-      logger.info(`[Auth] Created native user for Google login: ${email} as ${username}`);
+
+      logger.info(`[Auth] Created native user for Google login: ${email} as ${username} (verified: ${isVerified})`);
+
+      if (!isVerified) {
+        // Create verification OTP and send email, do NOT log the user in
+        const otp = generateOTP();
+        const otpHash = await bcrypt.hash(otp, 10);
+        const expiresAt = new Date(Date.now() + 15 * 60 * 1000);
+        await db.delete(verificationTokens).where(eq(verificationTokens.userId, userId));
+        await db.insert(verificationTokens).values({
+          userId,
+          token: otpHash,
+          expiresAt,
+        });
+        try {
+          await sendVerificationEmail(email, username, otp);
+        } catch (e) {
+          logger.warn("Failed to send verification email for Google user:", e);
+        }
+
+        const redirectTo = new URL(callbackUrl);
+        redirectTo.searchParams.set("needsVerification", "1");
+        redirectTo.searchParams.set("userId", userId);
+        const resp = NextResponse.redirect(redirectTo.toString());
+        resp.cookies.delete("__fanbiq_google_nonce");
+        resp.cookies.delete("__fanbiq_google_cb");
+        return resp;
+      }
     }
 
-    const cookieStore = await cookies();
-    const session = await getIronSession<SessionData>(cookieStore, await getSessionOptions());
+    const session = await getValidatedSession();
 
     session.user = {
       Id: userId,
@@ -175,6 +221,7 @@ export async function GET(request: NextRequest) {
       DeviceId: `google-${userId}`,
       provider: config.app.provider || "google",
       isAdmin: false,
+      sessionVersion: (existingUser?.sessionVersion ?? 1),
     };
     session.isLoggedIn = true;
     await session.save();

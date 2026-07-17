@@ -1,14 +1,11 @@
 import { NextResponse } from "next/server";
-import { getIronSession } from "iron-session";
-import { getSessionOptions } from "@/lib/session";
-import { cookies } from "next/headers";
+import { getValidatedSession } from "@/lib/server/validate-session";
 import { SessionData } from "@/types";
 import { MediaService } from "@/lib/services/media-service";
 import { handleApiError } from "@/lib/api-utils";
 
 export async function GET() {
-    const cookieStore = await cookies();
-    const session = await getIronSession<SessionData>(cookieStore, await getSessionOptions());
+    const session = await getValidatedSession();
     if (!session.isLoggedIn) return new NextResponse("Unauthorized", { status: 401 });
 
     try {
@@ -18,3 +15,4 @@ export async function GET() {
         return handleApiError(error, "Failed to fetch libraries");
     }
 }
+

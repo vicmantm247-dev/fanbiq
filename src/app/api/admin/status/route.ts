@@ -1,16 +1,12 @@
 import { NextResponse } from "next/server";
-import { getIronSession } from "iron-session";
-import { getSessionOptions } from "@/lib/session";
-import { cookies } from "next/headers";
-import { SessionData } from "@/types";
+import { getValidatedSession } from "@/lib/server/validate-session";
 import { ConfigService } from "@/lib/services/config-service";
 import { AuthService } from "@/lib/services/auth-service";
 
 export async function GET() {
-    const cookieStore = await cookies();
-    const session = await getIronSession<SessionData>(cookieStore, await getSessionOptions());
+    const session = await getValidatedSession();
 
-    if (!session.isLoggedIn) {
+    if (!session) {
         return new NextResponse("Unauthorized", { status: 401 });
     }
 

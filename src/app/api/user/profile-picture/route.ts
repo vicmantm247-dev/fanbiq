@@ -1,14 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getIronSession } from "iron-session";
-import { cookies } from "next/headers";
-import { getSessionOptions } from "@/lib/session";
+import { getValidatedSession } from "@/lib/server/validate-session";
 import { SessionData } from "@/types";
 import { saveProfilePicture, deleteProfilePicture } from "@/lib/server/profile-picture";
 import { handleApiError } from "@/lib/api-utils";
 
 export async function POST(request: NextRequest) {
-    const cookieStore = await cookies();
-    const session = await getIronSession<SessionData>(cookieStore, await getSessionOptions());
+    const session = await getValidatedSession();
 
     if (!session.isLoggedIn || !session.user?.Id) {
         return new NextResponse("Unauthorized", { status: 401 });
@@ -32,8 +29,7 @@ export async function POST(request: NextRequest) {
 }
 
 export async function DELETE(request: NextRequest) {
-    const cookieStore = await cookies();
-    const session = await getIronSession<SessionData>(cookieStore, await getSessionOptions());
+    const session = await getValidatedSession();
 
     if (!session.isLoggedIn || !session.user?.Id) {
         return new NextResponse("Unauthorized", { status: 401 });
@@ -46,3 +42,4 @@ export async function DELETE(request: NextRequest) {
         return handleApiError(error, "Delete failed");
     }
 }
+

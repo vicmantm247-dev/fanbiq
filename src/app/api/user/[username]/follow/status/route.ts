@@ -1,14 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getIronSession } from "iron-session";
-import { cookies } from "next/headers";
-import { getSessionOptions } from "@/lib/session";
+import { getValidatedSession } from "@/lib/server/validate-session";
 import { SessionData } from "@/types";
 import { db, nativeUsers, follows } from "@/db";
 import { eq, sql } from "drizzle-orm";
 
 export async function GET(request: NextRequest, context: { params: Promise<{ username: string }> }) {
-  const cookieStore = await cookies();
-  const session = await getIronSession<SessionData>(cookieStore, await getSessionOptions());
+  const session = await getValidatedSession();
 
   const { username } = await context.params;
   const normalizedUsername = username.trim().toLowerCase();

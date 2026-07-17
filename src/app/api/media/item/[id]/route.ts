@@ -1,8 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getIronSession } from "iron-session";
-import { getSessionOptions } from "@/lib/session";
-import { cookies } from "next/headers";
-import { SessionData } from "@/types";
+import { getValidatedSession } from "@/lib/server/validate-session";
 import { db, likes, sessionMembers } from "@/lib/db";
 import { eq, and, isNull, or } from "drizzle-orm";
 import { AuthService } from "@/lib/services/auth-service";
@@ -10,8 +7,7 @@ import { getMediaProvider } from "@/lib/providers/factory";
 import { handleApiError } from "@/lib/api-utils";
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const cookieStore = await cookies();
-  const session = await getIronSession<SessionData>(cookieStore, await getSessionOptions());
+  const session = await getValidatedSession();
   if (!session.isLoggedIn) return new NextResponse("Unauthorized", { status: 401 });
 
   const { id } = await params;

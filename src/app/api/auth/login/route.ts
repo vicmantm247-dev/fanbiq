@@ -1,12 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getIronSession } from "iron-session";
-import { getSessionOptions } from "@/lib/session";
-import { cookies } from "next/headers";
+import { getValidatedSession } from "@/lib/server/validate-session";
 import { SessionData } from "@/types";
 import axios from "axios";
 import bcrypt from "bcryptjs";
 import { eq, or } from "drizzle-orm";
 import { loginSchema } from "@/lib/validations";
+import { getClientIp, isRateLimitedKey } from "@/lib/rate-limit";
 import { getMediaProvider } from "@/lib/providers/factory";
 import { ConfigService } from "@/lib/services/config-service";
 import { AuthService } from "@/lib/services/auth-service";
@@ -27,6 +26,13 @@ export async function POST(request: NextRequest) {
 
         const { username, password, provider: bodyProvider, config: providerConfig, profilePicture } = validated.data;
         usernameForLog = username;
+
+        // Rate limiting: per-IP and per-account
+        const ip = getClientIp(request);
+        const ipLimit = isRateLimitedKey(`ip:${ip}`, 30, 60_000);
+        if (ipLimit.limited) {
+            return NextResponse.json({ message: "Too many requests" }, { status: 429, headers: { "Retry-After": String(ipLimit.retryAfter) } });
+        }
 
         const provider = getMediaProvider(bodyProvider);
         const activeProviderName = bodyProvider || provider.name;
@@ -49,6 +55,13 @@ export async function POST(request: NextRequest) {
                 )
                 .then((r: typeof nativeUsers.$inferSelect[]) => r[0]);
 
+            // Per-account throttling (prevent credential stuffing)
+            const acctKey = `acct:${username.toLowerCase().trim()}`;
+            const acctLimit = isRateLimitedKey(acctKey, 5, 60_000);
+            if (acctLimit.limited) {
+                return NextResponse.json({ message: "Too many attempts for this account" }, { status: 429, headers: { "Retry-After": String(acctLimit.retryAfter) } });
+            }
+
             if (!user) {
                 return NextResponse.json({ message: "Invalid email or password" }, { status: 401 });
             }
@@ -65,8 +78,7 @@ export async function POST(request: NextRequest) {
                 return NextResponse.json({ message: "Invalid email or password" }, { status: 401 });
             }
 
-            const cookieStore = await cookies();
-            const session = await getIronSession<SessionData>(cookieStore, await getSessionOptions());
+            const session = await getValidatedSession();
 
             session.user = {
                 Id: user.id,
@@ -74,6 +86,7 @@ export async function POST(request: NextRequest) {
                 DeviceId: `native-${user.id}`,
                 isAdmin: false,
                 provider: ProviderType.NATIVE,
+                sessionVersion: user.sessionVersion ?? 1,
             };
             session.isLoggedIn = true;
             await session.save();
@@ -108,8 +121,7 @@ export async function POST(request: NextRequest) {
             logger.info(`[Auth] User ${userName} (${userId}) set as initial admin for ${activeProviderName}.`);
         }
 
-        const cookieStore = await cookies();
-        const session = await getIronSession<SessionData>(cookieStore, await getSessionOptions());
+        const session = await getValidatedSession();
 
         session.user = {
             Id: userId,

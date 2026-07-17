@@ -1,14 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getIronSession } from "iron-session";
-import { getSessionOptions } from "@/lib/session";
-import { cookies } from "next/headers";
+import { getValidatedSession } from "@/lib/server/validate-session";
 import { SessionData } from "@/types";
 import { swipeSchema, deleteSwipeSchema } from "@/lib/validations";
 import { SessionService } from "@/lib/services/session-service";
 
 export async function POST(request: NextRequest) {
-  const cookieStore = await cookies();
-  const session = await getIronSession<SessionData>(cookieStore, await getSessionOptions());
+  const session = await getValidatedSession();
   if (!session.isLoggedIn) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const bodyRaw = await request.json();
@@ -31,8 +28,7 @@ export async function POST(request: NextRequest) {
 }
 
 export async function DELETE(request: NextRequest) {
-  const cookieStore = await cookies();
-  const session = await getIronSession<SessionData>(cookieStore, await getSessionOptions());
+  const session = await getValidatedSession();
   if (!session.isLoggedIn) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const bodyRaw = await request.json();
@@ -47,3 +43,4 @@ export async function DELETE(request: NextRequest) {
     return NextResponse.json({ error: "Failed to delete swipe" }, { status: 500 });
   }
 }
+

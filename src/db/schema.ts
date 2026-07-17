@@ -136,6 +136,7 @@ export const nativeUsers = pgTable("NativeUser", {
   displayName: text("displayName"),
   bio: text("bio"),
   isVerified: boolean("isVerified").notNull().default(false),
+  sessionVersion: integer("sessionVersion").notNull().default(1),
   createdAt: timestamp("createdAt").notNull().default(sql`CURRENT_TIMESTAMP`),
   updatedAt: timestamp("updatedAt").notNull().default(sql`CURRENT_TIMESTAMP`),
 }, (table) => [
@@ -172,6 +173,7 @@ export const verificationTokens = pgTable("VerificationToken", {
   userId: text("userId").notNull().references(() => nativeUsers.id, { onDelete: "cascade" }),
   token: text("token").notNull(),          // 6-digit OTP stored as hashed value
   expiresAt: timestamp("expiresAt").notNull(),  // ISO timestamp
+  attempts: integer("attempts").notNull().default(0),
   createdAt: timestamp("createdAt").notNull().default(sql`CURRENT_TIMESTAMP`),
 }, (table) => [
   index("VerificationToken_userId_idx").on(table.userId),

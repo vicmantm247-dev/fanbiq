@@ -1,15 +1,12 @@
 import { NextResponse } from "next/server";
-import { getIronSession } from "iron-session";
-import { getSessionOptions } from "@/lib/session";
+import { getValidatedSession } from "@/lib/server/validate-session";
 import { db, likes as likesTable, hiddens as hiddensTable, sessions as sessionsTable } from "@/lib/db";
 import { eq } from "drizzle-orm";
-import { cookies } from "next/headers";
 import { SessionData } from "@/types";
 import { handleApiError } from "@/lib/api-utils";
 
 export async function POST() {
-  const cookieStore = await cookies();
-  const session = await getIronSession<SessionData>(cookieStore, await getSessionOptions());
+  const session = await getValidatedSession();
 
   if (!session.isLoggedIn) {
     return new NextResponse("Unauthorized", { status: 401 });
@@ -43,3 +40,4 @@ export async function POST() {
     return handleApiError(error, "Failed to clear data");
   }
 }
+

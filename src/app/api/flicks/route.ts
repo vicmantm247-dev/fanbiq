@@ -1,17 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { desc, sql, arrayContains, eq, inArray } from 'drizzle-orm';
 import { formatDistanceToNow } from 'date-fns';
-import { getIronSession } from 'iron-session';
-import { cookies } from 'next/headers';
-import { getSessionOptions } from '@/lib/session';
+import { getValidatedSession } from "@/lib/server/validate-session";
 import { SessionData } from '@/types';
 import { db } from '@/db';
 import { flicks, type FlickRow, nativeUsers, follows } from '@/db/schema';
 import { FlickPersonalizationService } from '@/lib/services/flick-personalization-service';
 
 export async function GET(request: NextRequest) {
-    const cookieStore = await cookies();
-    const session = await getIronSession<SessionData>(cookieStore, await getSessionOptions());
+    const session = await getValidatedSession();
     const currentUserId = session?.isLoggedIn && session.user?.Id ? session.user.Id : null;
   try {
     const { searchParams } = request.nextUrl;
@@ -96,3 +93,4 @@ export async function GET(request: NextRequest) {
     );
   }
 }
+

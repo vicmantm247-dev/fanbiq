@@ -1,10 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
-import { eq } from "drizzle-orm";
+import { eq, desc, sql } from "drizzle-orm";
 import { db, nativeUsers, verificationTokens } from "@/db";
-import { getIronSession } from "iron-session";
-import { getSessionOptions } from "@/lib/session";
-import { cookies } from "next/headers";
+import { getValidatedSession } from "@/lib/server/validate-session";
 import { SessionData } from "@/types";
 import { verifyOtpSchema } from "@/lib/validations";
 import { logger } from "@/lib/logger";
@@ -39,7 +37,9 @@ export async function POST(request: NextRequest) {
       .select()
       .from(verificationTokens)
       .where(eq(verificationTokens.userId, userId))
-      .then((r: typeof verificationTokens.$inferSelect[]) => r[r.length - 1]); // latest token
+      .orderBy(desc(verificationTokens.createdAt))
+      .limit(1)
+      .then((r: typeof verificationTokens.$inferSelect[]) => r[0]); // latest token
 
     if (!tokenRow) {
       return NextResponse.json({ message: "No verification code found. Request a new one." }, { status: 400 });
@@ -53,6 +53,23 @@ export async function POST(request: NextRequest) {
     // Check OTP
     const valid = await bcrypt.compare(otp, tokenRow.token);
     if (!valid) {
+      // Increment attempts; if exceeded, delete token
+      await db
+        .update(verificationTokens)
+        .set({ attempts: sql`${verificationTokens.attempts} + 1` })
+        .where(eq(verificationTokens.id, tokenRow.id));
+
+      const refreshed = await db
+        .select()
+        .from(verificationTokens)
+        .where(eq(verificationTokens.id, tokenRow.id))
+        .then((r: typeof verificationTokens.$inferSelect[]) => r[0]);
+
+      if (!refreshed || refreshed.attempts >= 5) {
+        await db.delete(verificationTokens).where(eq(verificationTokens.id, tokenRow.id));
+        return NextResponse.json({ message: "Verification code locked due to too many incorrect attempts" }, { status: 401 });
+      }
+
       return NextResponse.json({ message: "Incorrect verification code" }, { status: 401 });
     }
 
@@ -65,8 +82,7 @@ export async function POST(request: NextRequest) {
     await db.delete(verificationTokens).where(eq(verificationTokens.userId, userId));
 
     // Create session
-    const cookieStore = await cookies();
-    const session = await getIronSession<SessionData>(cookieStore, await getSessionOptions());
+    const session = await getValidatedSession();
 
     session.user = {
       Id: user.id,
@@ -74,6 +90,7 @@ export async function POST(request: NextRequest) {
       DeviceId: `native-${user.id}`,
       isAdmin: false,
       provider: "native",
+      sessionVersion: user.sessionVersion ?? 1,
     };
     session.isLoggedIn = true;
     await session.save();

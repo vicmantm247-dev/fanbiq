@@ -1,7 +1,5 @@
 import { NextRequest } from "next/server";
-import { getIronSession } from "iron-session";
-import { getSessionOptions } from "@/lib/session";
-import { cookies } from "next/headers";
+import { getValidatedSession } from "@/lib/server/validate-session";
 import { SessionData } from "@/types";
 import { db } from "@/lib/db";
 import { sessionEvents } from "@/db/schema";
@@ -21,8 +19,7 @@ const MAX_POLL_INTERVAL_MS = 5000;
 const KEEPALIVE_INTERVAL_MS = 25_000;
 
 export async function GET(request: NextRequest) {
-    const cookieStore = await cookies();
-    const session = await getIronSession<SessionData>(cookieStore, await getSessionOptions());
+    const session = await getValidatedSession();
 
     // Only serve SSE to authenticated users who are in a session.
     // Unauthenticated or session-less users don't need the stream.
@@ -137,3 +134,4 @@ export async function GET(request: NextRequest) {
         },
     });
 }
+

@@ -1,14 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getIronSession } from "iron-session";
-import { getSessionOptions } from "@/lib/session";
+import { getValidatedSession } from "@/lib/server/validate-session";
 import { db, likes, hiddens, sessionMembers, sessions } from "@/lib/db";
 import { eq, and, sql } from "drizzle-orm";
-import { cookies } from "next/headers";
 import { SessionData, SessionStats } from "@/types";
 
 export async function GET(request: NextRequest) {
-    const cookieStore = await cookies();
-    const session = await getIronSession<SessionData>(cookieStore, await getSessionOptions());
+    const session = await getValidatedSession();
     if (!session.isLoggedIn || !session.sessionCode) {
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
@@ -66,8 +63,7 @@ export async function GET(request: NextRequest) {
 }
 
 export async function DELETE(request: NextRequest) {
-    const cookieStore = await cookies();
-    const session = await getIronSession<SessionData>(cookieStore, await getSessionOptions());
+    const session = await getValidatedSession();
     if (!session.isLoggedIn || !session.sessionCode) {
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
@@ -97,3 +93,4 @@ export async function DELETE(request: NextRequest) {
 
     return NextResponse.json({ success: true });
 }
+

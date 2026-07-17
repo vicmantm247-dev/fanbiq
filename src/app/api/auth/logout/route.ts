@@ -1,14 +1,11 @@
 import { NextResponse } from "next/server";
-import { getIronSession } from "iron-session";
-import { getSessionOptions } from "@/lib/session";
-import { cookies } from "next/headers";
+import { getValidatedSession } from "@/lib/server/validate-session";
 import { SessionData } from "@/types";
 import { SessionService } from "@/lib/services/session-service";
 import { logger } from "@/lib/logger";
 
 export async function POST() {
-  const cookieStore = await cookies();
-  const session = await getIronSession<SessionData>(cookieStore, await getSessionOptions());
+  const session = await getValidatedSession();
 
   if (session.user?.Id && session.sessionCode) {
     try {

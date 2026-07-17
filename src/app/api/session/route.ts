@@ -1,8 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getIronSession } from "iron-session";
-import { getSessionOptions } from "@/lib/session";
-import { cookies } from "next/headers";
-import { SessionData } from "@/types";
+import { getValidatedSession } from "@/lib/server/validate-session";
 import { sessionActionSchema, sessionSettingsSchema } from "@/lib/validations";
 import { getMediaProvider } from "@/lib/providers/factory";
 import { ProviderType } from "@/lib/providers/types";
@@ -15,9 +12,8 @@ import { logger } from "@/lib/logger";
 import { handleApiError } from "@/lib/api-utils";
 
 export async function POST(request: NextRequest) {
-  const cookieStore = await cookies();
-  const session = await getIronSession<SessionData>(cookieStore, await getSessionOptions());
-  if (!session.isLoggedIn) return NextResponse.json(null);
+  const session = await getValidatedSession();
+  if (!session) return NextResponse.json(null);
 
   const body = await request.json();
   const validated = sessionActionSchema.safeParse(body);
@@ -48,9 +44,8 @@ export async function POST(request: NextRequest) {
 }
 
 export async function PATCH(request: NextRequest) {
-  const cookieStore = await cookies();
-  const session = await getIronSession<SessionData>(cookieStore, await getSessionOptions());
-  if (!session.isLoggedIn) return new NextResponse("Unauthorized", { status: 401 });
+  const session = await getValidatedSession();
+  if (!session) return new NextResponse("Unauthorized", { status: 401 });
 
   const body = await request.json();
   const validated = sessionSettingsSchema.safeParse(body);
@@ -73,10 +68,9 @@ export async function PATCH(request: NextRequest) {
 }
 
 export async function GET() {
-  const cookieStore = await cookies();
-  const session = await getIronSession<SessionData>(cookieStore, await getSessionOptions());
+  const session = await getValidatedSession();
   
-  if (!session.isLoggedIn) return NextResponse.json(null);
+  if (!session) return NextResponse.json(null);
 
   let effectiveUserId = null;
   let activeProvider = session.user.provider || ProviderType.JELLYFIN;
@@ -151,10 +145,11 @@ export async function GET() {
 }
 
 export async function DELETE() {
-  const cookieStore = await cookies();
-  const session = await getIronSession<SessionData>(cookieStore, await getSessionOptions());
+  const session = await getValidatedSession();
   
-  if (session.isLoggedIn && session.user && session.sessionCode) {
+  if (!session) return new NextResponse("Unauthorized", { status: 401 });
+
+  if (session.user && session.sessionCode) {
     await SessionService.leaveSession(session.user, session.sessionCode);
   }
 

@@ -1,8 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getIronSession } from "iron-session";
-import { getSessionOptions } from "@/lib/session";
-import { cookies } from "next/headers";
-import { SessionData } from "@/types";
+import { getValidatedSession } from "@/lib/server/validate-session";
 import { eq } from "drizzle-orm";
 import { db, nativeUsers } from "@/db";
 import { logger } from "@/lib/logger";
@@ -10,10 +7,9 @@ import { getErrorMessage } from "@/lib/utils";
 
 export async function GET(request: NextRequest) {
   try {
-    const cookieStore = await cookies();
-    const session = await getIronSession<SessionData>(cookieStore, await getSessionOptions());
+    const session = await getValidatedSession();
 
-    if (!session.isLoggedIn) {
+    if (!session) {
       return NextResponse.json(null);
     }
 

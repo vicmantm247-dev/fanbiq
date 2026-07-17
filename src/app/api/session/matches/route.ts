@@ -1,17 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getIronSession } from "iron-session";
-import { getSessionOptions } from "@/lib/session";
+import { getValidatedSession } from "@/lib/server/validate-session";
 import { db, likes, sessionMembers, userProfiles } from "@/lib/db";
 import { eq, and, desc, sql } from "drizzle-orm";
-import { cookies } from "next/headers";
 import { SessionData } from "@/types";
 import { AuthService } from "@/lib/services/auth-service";
 import { getMediaProvider } from "@/lib/providers/factory";
 import { handleApiError } from "@/lib/api-utils";
 
 export async function GET(request: NextRequest) {
-  const cookieStore = await cookies();
-  const session = await getIronSession<SessionData>(cookieStore, await getSessionOptions());
+  const session = await getValidatedSession();
   if (!session.isLoggedIn) return new NextResponse("Unauthorized", { status: 401 });
 
   if (!session.sessionCode) return NextResponse.json([]);
@@ -82,3 +79,4 @@ export async function GET(request: NextRequest) {
     return handleApiError(error, "Failed to fetch matches");
   }
 }
+
