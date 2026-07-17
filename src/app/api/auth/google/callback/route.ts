@@ -83,7 +83,7 @@ export async function GET(request: NextRequest) {
     const existingUser = await db
       .select()
       .from(nativeUsers)
-      .where(nativeUsers.email.eq(email))
+      .where(eq(nativeUsers.email, email))
       .then((rows: typeof nativeUsers.$inferSelect[]) => rows[0]);
 
     let userId: string;
