@@ -9,10 +9,7 @@ import {
 } from "@/types/media";
 
 export enum ProviderType {
-  JELLYFIN = 'jellyfin',
   TMDB = 'tmdb',
-  PLEX = 'plex',
-  EMBY = 'emby',
   NATIVE = 'native',
 }
 
@@ -25,43 +22,10 @@ export interface ProviderCapabilities {
   requiresServerUrl: boolean;
   isExperimental: boolean;
   hasStreamingSettings: boolean; // TMDB specific streaming/region filters
-  isAdminPanel: boolean; // Jellyfin/Emby/Plex server management
+  isAdminPanel: boolean;
 }
 
 export const PROVIDER_CAPABILITIES: Record<ProviderType, ProviderCapabilities> = {
-  [ProviderType.JELLYFIN]: {
-    hasAuth: true,
-    hasQuickConnect: true,
-    hasWatchlist: true,
-    hasLibraries: true,
-    hasSettings: true,
-    requiresServerUrl: true,
-    isExperimental: false,
-    hasStreamingSettings: false,
-    isAdminPanel: true,
-  },
-  [ProviderType.EMBY]: {
-    hasAuth: true,
-    hasQuickConnect: false,
-    hasWatchlist: true,
-    hasLibraries: true,
-    hasSettings: true,
-    requiresServerUrl: true,
-    isExperimental: true,
-    hasStreamingSettings: false,
-    isAdminPanel: true,
-  },
-  [ProviderType.PLEX]: {
-    hasAuth: true,
-    hasQuickConnect: true,
-    hasWatchlist: true,
-    hasLibraries: true,
-    hasSettings: true,
-    requiresServerUrl: true,
-    isExperimental: false,
-    hasStreamingSettings: false,
-    isAdminPanel: true,
-  },
   [ProviderType.TMDB]: {
     hasAuth: false,
     hasQuickConnect: false,
