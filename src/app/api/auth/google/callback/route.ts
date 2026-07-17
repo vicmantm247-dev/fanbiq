@@ -125,7 +125,8 @@ export async function GET(request: NextRequest) {
       Id: userId,
       Name: displayName,
       DeviceId: `google-${userId}`,
-      provider: "google",
+      // Use the app's configured provider to avoid provider_lock mismatches
+      provider: config.app.provider || "google",
       isAdmin: false,
     };
     session.isLoggedIn = true;
