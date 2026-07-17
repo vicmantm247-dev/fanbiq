@@ -12,7 +12,9 @@ const BASE_PATH = (() => {
 
 const nextConfig: NextConfig = {
   reactCompiler: true,
-  cacheComponents: true,
+  // Turbopack/build error occurs when route files export `dynamic = "force-dynamic"`
+  // while `cacheComponents` is enabled. Disable it to allow those route configs.
+  cacheComponents: false,
   output: "standalone",
   assetPrefix: BASE_PATH || undefined,
   experimental: {
