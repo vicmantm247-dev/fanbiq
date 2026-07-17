@@ -68,7 +68,16 @@ export async function GET(request: NextRequest) {
     if (state) {
       try {
         const parsed = JSON.parse(decodeURIComponent(state));
-        callbackUrl = parsed.callbackUrl || callbackUrl;
+        if (parsed && parsed.callbackUrl) {
+          try {
+            // Ensure callbackUrl is absolute. If parsed.callbackUrl is relative ("/"),
+            // resolve it against the current request origin to avoid Next.js errors.
+            callbackUrl = new URL(parsed.callbackUrl, request.nextUrl.origin).toString();
+          } catch (e) {
+            // If URL resolution fails, keep the default callbackUrl
+            logger.warn('[Auth] Failed to resolve callbackUrl, using default', parsed.callbackUrl, e);
+          }
+        }
       } catch {
         // ignore invalid state parsing
       }
@@ -121,6 +130,7 @@ export async function GET(request: NextRequest) {
     await session.save();
 
     logger.info(`[Auth] Google login success for ${email}`);
+    logger.info(`[Auth] Redirecting user to callbackUrl: ${callbackUrl}`);
 
     return NextResponse.redirect(callbackUrl);
   } catch (error) {
