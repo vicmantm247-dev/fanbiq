@@ -50,8 +50,9 @@ async function fetchGoogleUser(idToken: string, accessToken: string) {
 }
 
 export async function GET(request: NextRequest) {
+  let redirectUri: string | undefined;
   try {
-    let redirectUri = `${request.nextUrl.origin}${config.app.basePath || ""}/api/auth/google/callback`;
+    redirectUri = `${request.nextUrl.origin}${config.app.basePath || ""}/api/auth/google/callback`;
     // log the incoming request for debugging
     logger.info(`[Auth] Google callback invoked: ${request.nextUrl.href}`);
     logger.info(`[Auth] Using redirectUri: ${redirectUri}`);
