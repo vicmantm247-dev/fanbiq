@@ -119,6 +119,11 @@ export async function GET(request: NextRequest) {
     return NextResponse.redirect(callbackUrl);
   } catch (error) {
     logger.error("Google callback failed", error);
-    return NextResponse.json({ error: "Google login failed." }, { status: 500 });
+    // In development return the underlying error message to aid debugging.
+    const isDev = (config.NODE_ENV || 'development') === 'development';
+    const errMessage = error instanceof Error ? error.message : String(error);
+    const body: any = { error: "Google login failed." };
+    if (isDev) body.details = errMessage;
+    return NextResponse.json(body, { status: 500 });
   }
 }
