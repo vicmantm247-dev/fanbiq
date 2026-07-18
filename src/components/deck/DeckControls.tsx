@@ -47,7 +47,7 @@ export function DeckControls({
       >
         <Share2 className="size-5.5" />
         {hasAppliedFilters && (
-          <span className="rounded-full bg-foreground absolute top-0 right-0 size-3.5 border-2 border-background animate-in zoom-in duration-300" />
+          <span className=" bg-foreground absolute top-0 right-0 size-3.5 border-2 border-background animate-in zoom-in duration-300" />
         )}
       </Button>
       <Button

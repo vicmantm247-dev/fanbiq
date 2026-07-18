@@ -10,24 +10,22 @@ export async function getValidatedSession(): Promise<IronSession<SessionData>> {
   const cookieStore = await cookies();
   const session = await getIronSession<SessionData>(cookieStore, await getSessionOptions());
 
-  const defaultSession: IronSession<SessionData> = Object.assign(
-    {
-      user: { Id: "", Name: "", DeviceId: "" },
-      isLoggedIn: false,
-      save: async () => {},
-      destroy: async () => {},
-    } as Partial<IronSession<SessionData>>,
-    {}
-  ) as IronSession<SessionData>;
+  if (!session) {
+    throw new Error("Unable to initialize session");
+  }
 
-  if (!session || !session.isLoggedIn || !session.user?.Id) {
-    return defaultSession;
+  if (!session.isLoggedIn || !session.user?.Id) {
+    session.user = { Id: "", Name: "", DeviceId: "" } as any;
+    session.isLoggedIn = false;
+    return session;
   }
 
   if (session.user.sessionVersion === undefined) {
     logger.info(`[ValidateSession] Missing sessionVersion for user ${session.user.Id}`);
     await session.destroy();
-    return defaultSession;
+    session.user = { Id: "", Name: "", DeviceId: "" } as any;
+    session.isLoggedIn = false;
+    return session;
   }
 
   const user = await db
@@ -39,7 +37,9 @@ export async function getValidatedSession(): Promise<IronSession<SessionData>> {
   if (!user) {
     logger.warn(`[ValidateSession] No native user found for session user ${session.user.Id}`);
     await session.destroy();
-    return defaultSession;
+    session.user = { Id: "", Name: "", DeviceId: "" } as any;
+    session.isLoggedIn = false;
+    return session;
   }
 
   if (user.sessionVersion !== session.user.sessionVersion) {
@@ -47,7 +47,9 @@ export async function getValidatedSession(): Promise<IronSession<SessionData>> {
       `[ValidateSession] Session version mismatch for ${session.user.Id}: cookie=${session.user.sessionVersion} db=${user.sessionVersion}`
     );
     await session.destroy();
-    return defaultSession;
+    session.user = { Id: "", Name: "", DeviceId: "" } as any;
+    session.isLoggedIn = false;
+    return session;
   }
 
   return session as IronSession<SessionData>;
