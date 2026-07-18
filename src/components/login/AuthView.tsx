@@ -166,16 +166,6 @@ export function AuthView({
 }: AuthViewProps) {
 
   const providerName = provider[0].toUpperCase() + provider.substring(1);
-  const isPlex = provider === ProviderType.PLEX;
-  const [pinCopied, setPinCopied] = useState(false);
-
-  const handlePinCopy = () => {
-    if (plexPinCode) {
-      navigator.clipboard.writeText(plexPinCode);
-      setPinCopied(true);
-      setTimeout(() => setPinCopied(false), 2000);
-    }
-  };
 
   return (
     <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
@@ -192,79 +182,37 @@ export function AuthView({
             onCancel={() => setQcCode(null)}
             variant="quick-connect"
           />
-        ) : plexPinCode && plexAuthUrl && isPlex ? (
-          <AuthCodeView
-            code={plexPinCode}
-            authUrl={plexAuthUrl}
-            copied={pinCopied}
-            onCopy={handlePinCopy}
-            onCancel={() => setPlexPinCode?.(null)}
-            variant="plex-pin"
-          />
         ) : (
           <form onSubmit={handleLogin} className="space-y-3">
             <CardDescription>
-              {isPlex 
-                ? 'Sign in to link with your Plex account'
-                : `Enter your ${providerName} credentials`
-              }
+              Enter your {providerName} credentials
             </CardDescription>
 
-            {!providerLock && (
-              <Input
-                placeholder={
-                  provider === ProviderType.JELLYFIN
-                    ? "Jellyfin Server URL"
-                    : provider === ProviderType.EMBY
-                    ? "Emby Server URL"
-                    : "Plex Server URL (optional)"
-                }
-                value={serverUrl}
-                onChange={(e) => setServerUrl(e.target.value)}
-                className="bg-muted border-input text-xs h-8"
-              />
+            <Input
+              placeholder="Username"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              className="bg-muted border-input"
+            />
+            <PasswordInput
+              placeholder="Password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+            />
+
+            {provider === ProviderType.NATIVE && (
+              <div className="flex justify-end">
+                <Link href="/forgot-password" className="text-sm font-medium text-primary hover:underline">
+                  Forgot password?
+                </Link>
+              </div>
             )}
 
-            {isPlex ? (
-              <>
-                <Button
-                  type="button"
-                  className="w-full mt-2 font-semibold"
-                  onClick={startPlexPinAuth}
-                  disabled={loading}
-                >
-                  {loading ? "Creating PIN..." : "Sign in with PIN"}
-                </Button>
-              </>
-            ) : (
-              <>
-                <Input
-                  placeholder="Username"
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
-                  className="bg-muted border-input"
-                />
-                <PasswordInput
-                  placeholder="Password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                />
+            <Button type="submit" className="w-full mt-2 font-semibold" disabled={loading}>
+              {loading ? "Connecting..." : "Log in"}
+            </Button>
 
-                {provider === ProviderType.NATIVE && (
-                  <div className="flex justify-end">
-                    <Link href="/forgot-password" className="text-sm font-medium text-primary hover:underline">
-                      Forgot password?
-                    </Link>
-                  </div>
-                )}
-
-                <Button type="submit" className="w-full mt-2 font-semibold" disabled={loading}>
-                  {loading ? "Connecting..." : "Log in"}
-                </Button>
-              </>
-            )}
-
-            {hasQuickConnect && !isPlex && (
+            {hasQuickConnect && (
               <>
                 <div className="relative py-1">
                   <div className="absolute inset-0 flex items-center">

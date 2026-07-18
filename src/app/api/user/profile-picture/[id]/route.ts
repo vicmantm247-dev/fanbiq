@@ -70,14 +70,6 @@ export async function GET(
             return new NextResponse("User image not found", { status: 404 });
         }
 
-        if ((providerType === ProviderType.PLEX || provider?.name === ProviderType.PLEX) && effectiveTag && effectiveTag.startsWith("http")) {
-            try {
-                provider.getImageUrl(id, "user", effectiveTag, auth);
-            } catch (e: any) {
-                return new NextResponse("External image host not allowed", { status: 400 });
-            }
-        }
-
         const options: Record<string, string> = {};
         searchParams.forEach((value, key) => {
             if (!["token", "imageType", "tag", "type", "provider"].includes(key)) {

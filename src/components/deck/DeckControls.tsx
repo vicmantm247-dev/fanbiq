@@ -42,7 +42,7 @@ export function DeckControls({
       <Button
         size="icon"
         variant="secondary"
-        className="h-12 w-12 rounded-full bg-background/50 border-2 relative"
+        className="h-12 w-12 relative"
         onClick={onOpenFilter}
       >
         <Share2 className="size-5.5" />

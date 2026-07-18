@@ -1,5 +1,4 @@
 import { config } from "@/lib/config";
-import { ALLOWED_DEFAULT_PLEX_IMAGE_URL } from "../constants";
 import dns from "dns/promises";
 
 const PRIVATE_HOSTNAMES = new Set([
@@ -78,19 +77,6 @@ export const isAllowedHost = (hostname: string, allowlist?: string[]): boolean =
     if (allowed.startsWith("*.") && host.endsWith(allowed.slice(1))) return true;
     return host === allowed;
   });
-};
-
-export const getProviderAllowlist = (): string[] => {
-  return parseAllowlist(config.security.plexImageAllowedHosts);
-};
-
-export const getAllowedPlexImageHosts = (): string[] => {
-  const normalizedDefault = parseAllowlist(ALLOWED_DEFAULT_PLEX_IMAGE_URL)[0];
-  return Array.from(new Set([
-    ...getConfiguredProviderHosts(),
-    ...getProviderAllowlist(),
-    ...(normalizedDefault ? [normalizedDefault] : []),
-  ]));
 };
 
 export const getConfiguredProviderHosts = (): string[] => {

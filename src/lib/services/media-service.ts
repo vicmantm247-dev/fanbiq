@@ -16,7 +16,7 @@ export class MediaService {
     logger.debug(`getMediaItems: page=${page}, limit=${limit}, searchTerm=${searchTerm}`, { overrideFilters });
     const auth = await AuthService.getEffectiveCredentials(session);
     const provider = getMediaProvider(auth.provider);
-    const activeProviderName = auth.provider || session.user.provider || ProviderType.JELLYFIN;
+    const activeProviderName = auth.provider || session.user.provider || ProviderType.NATIVE;
 
     const includedLibraries = await ConfigService.getIncludedLibraries();
 
@@ -400,14 +400,7 @@ export class MediaService {
     const providerName = auth.provider as ProviderType;
     const allItems: MediaItem[] = [];
 
-    // Provider-specific fetching strategies
-    if (providerName === ProviderType.JELLYFIN || providerName === ProviderType.EMBY) {
-      return this.fetchAllJellyfinEmbyItems(provider, auth, includedLibraries, sessionFilters, watchProviders, watchRegion);
-    } else if (providerName === ProviderType.PLEX) {
-      return this.fetchAllPlexItems(provider, auth, includedLibraries, sessionFilters);
-    } else if (providerName === ProviderType.TMDB) {
-      return this.fetchAllTMDBItems(provider, auth, sessionFilters, watchProviders, watchRegion);
-    }
+    return this.fetchAllTMDBItems(provider, auth, sessionFilters, watchProviders, watchRegion);
 
     return allItems;
   }
@@ -815,7 +808,7 @@ export class MediaService {
   static async getWatchProviders(session: SessionData, region: string, sessionCode?: string | null, wantAll?: boolean) {
     const auth = await AuthService.getEffectiveCredentials(session);
     const provider = getMediaProvider(auth.provider);
-    const activeProvider = auth.provider || session.user.provider || ProviderType.JELLYFIN;
+    const activeProvider = auth.provider || session.user.provider || ProviderType.NATIVE;
     const isTmdbBasedProvider = activeProvider === ProviderType.TMDB || activeProvider === ProviderType.NATIVE;
 
     if (!isTmdbBasedProvider) {

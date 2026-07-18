@@ -69,14 +69,6 @@ export class SessionService {
       if (existingSession.provider !== user.provider) {
         throw new Error(`Provider mismatch: Session is ${existingSession.provider}, you are ${user.provider}`);
       }
-
-      if ([ProviderType.JELLYFIN, ProviderType.EMBY, ProviderType.PLEX].includes(existingSession.provider as any)) {
-        const sessionConfig = existingSession.providerConfig ? JSON.parse(existingSession.providerConfig) : {};
-        const userConfig = user.providerConfig || {};
-        if (sessionConfig.serverUrl !== userConfig.serverUrl) {
-          throw new Error(`Server mismatch: Session is on ${sessionConfig.serverUrl}, you are on ${userConfig.serverUrl}`);
-        }
-      }
     }
 
     const settings = await ConfigService.getUserSettings(user.Id);

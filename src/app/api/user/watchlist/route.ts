@@ -26,11 +26,7 @@ export async function POST(request: NextRequest) {
     const auth = await AuthService.getEffectiveCredentials(session);
     const provider = getMediaProvider(auth.provider);
 
-    const effectiveUseWatchlist = auth.provider === ProviderType.PLEX ? true : useWatchlist;
-
-    if (effectiveUseWatchlist && provider.toggleWatchlist) {
-      await provider.toggleWatchlist(itemId, action, auth);
-    } else if (!effectiveUseWatchlist && provider.toggleFavorite) {
+    if (provider.toggleFavorite) {
       await provider.toggleFavorite(itemId, action, auth);
     } else {
       return NextResponse.json({ error: "Operation not supported by this provider" }, { status: 400 });

@@ -18,7 +18,7 @@ interface SettingsState {
 function getDefaultSettings(): Settings {
   const rc = getRuntimeConfig();
   return {
-    useWatchlist: rc.provider === ProviderType.JELLYFIN && rc.useWatchlist,
+    useWatchlist: false,
     allowGuestLending: false,
     hasDismissedGuestLendingAlert: false,
   };

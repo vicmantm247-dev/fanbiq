@@ -18,10 +18,10 @@ export function GeneralSettings() {
     const runtimeConfig = useRuntimeConfig();
 
     const provider = sessionStatus?.provider || runtimeConfig.provider;
-    const showCollectionToggle = provider === ProviderType.JELLYFIN && runtimeConfig.useWatchlist;
+    const showCollectionToggle = false;
 
     return (
-        <SettingsSection title="General">
+        <SettingsSection title="General Settings">
             <div className="grid grid-flow-col items-center justify-between gap-2">
                 <div className="space-y-0.5">
                     <div className="flex items-center gap-1.5">

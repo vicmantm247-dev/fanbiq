@@ -89,6 +89,15 @@ export async function proxy(request: NextRequest) {
 
   const session = await getIronSession<SessionData>(request, response, await getSessionOptions());
 
+  // Debug logging for session state
+  if (pathname === "/" || pathname.includes("/api/session")) {
+    console.log(`[proxy] Session check for ${pathname}:`, {
+      isLoggedIn: session?.isLoggedIn,
+      userId: session?.user?.Id,
+      provider: session?.user?.provider,
+      sessionVersion: session?.user?.sessionVersion,
+    });
+  }
 
   if (!session.isLoggedIn) {
     if (pathname.includes("/api/")) {

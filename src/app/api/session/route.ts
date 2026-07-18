@@ -73,7 +73,7 @@ export async function GET() {
   if (!session) return NextResponse.json(null);
 
   let effectiveUserId = null;
-  let activeProvider = session.user.provider || ProviderType.JELLYFIN;
+  let activeProvider = session.user.provider || ProviderType.NATIVE;
   let activeServerUrl = session.user.providerConfig?.serverUrl;
   let activeMachineId = session.user.providerConfig?.machineId;
 

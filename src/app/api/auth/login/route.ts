@@ -12,9 +12,12 @@ import { logger } from "@/lib/logger";
 import { handleApiError } from "@/lib/api-utils";
 import { db, nativeUsers } from "@/db";
 import { ProviderType } from "@/lib/providers/types";
+import { getIronSession } from "iron-session";
+import { getSessionOptions } from "@/lib/session";
 
 export async function POST(request: NextRequest) {
     let usernameForLog = "unknown";
+    
     try {
         const body = await request.json();
         const validated = loginSchema.safeParse(body);
@@ -76,7 +79,11 @@ export async function POST(request: NextRequest) {
                 return NextResponse.json({ message: "Invalid email or password" }, { status: 401 });
             }
 
-            const session = await getValidatedSession();
+            // Create a response object that iron-session can modify with Set-Cookie
+            const responseToModify = new NextResponse();
+            
+            // Use request/response pattern for session to match proxy middleware
+            const session = await getIronSession<SessionData>(request, responseToModify, await getSessionOptions());
 
             session.user = {
                 Id: user.id,
@@ -89,8 +96,22 @@ export async function POST(request: NextRequest) {
             session.isLoggedIn = true;
             await session.save();
 
-            logger.info(`[Auth] Native login success: ${user.username}`);
-            return NextResponse.json({ success: true, user: session.user });
+            logger.info(`[Auth] Native login success: ${user.username}`, {
+              userId: session.user.Id,
+              isLoggedIn: session.isLoggedIn,
+              sessionVersion: session.user.sessionVersion
+            });
+            
+            // Create JSON response with the Set-Cookie header from iron-session
+            const jsonResponse = NextResponse.json({ success: true, user: session.user });
+            
+            // Copy Set-Cookie headers from responseToModify to jsonResponse
+            const cookies = responseToModify.headers.getSetCookie();
+            cookies.forEach(cookie => {
+              jsonResponse.headers.append('Set-Cookie', cookie);
+            });
+            
+            return jsonResponse;
         }
 
         // Only native provider supported for /auth/login

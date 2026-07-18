@@ -4,7 +4,6 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
 import { useQuickConnectUpdates } from "@/lib/use-updates";
-import { usePlexPinAuth } from "@/hooks/usePlexPinAuth";
 import Image from "next/image";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import logo from "../../../public/icon0.svg"
@@ -12,13 +11,12 @@ import { apiClient } from "@/lib/api-client";
 import { cn, getErrorMessage } from "@/lib/utils";
 import { useRuntimeConfig } from "@/lib/runtime-config";
 import { PROVIDER_CAPABILITIES, ProviderType } from "@/lib/providers/types";
-import { createPlexPinClient, buildPlexAuthUrl } from "@/lib/plex/client-auth";
 
 import { AdminInitializedView } from "./AdminInitializedView";
 import { AuthView } from "./AuthView";
 import { UniversalView } from "./UniversalView";
 import { NativeView } from "./NativeView";
-import { SiPlex, SiJellyfin, SiThemoviedatabase, SiEmby } from "react-icons/si";
+import { SiThemoviedatabase } from "react-icons/si";
 import { User } from "lucide-react";
 import GradientText from "../ui/gradient-text";
 import { SecureContextCopyFallback } from "../SecureContextCopyFallback";
@@ -48,9 +46,6 @@ export default function LoginContent() {
   const [isFallbackOpen, setIsFallbackOpen] = useState(false);
   const [qcCode, setQcCode] = useState<string | null>(null);
   const [qcSecret, setQcSecret] = useState<string | null>(null);
-  const [plexPinId, setPlexPinId] = useState<number | null>(null);
-  const [plexPinCode, setPlexPinCode] = useState<string | null>(null);
-  const [plexAuthUrl, setPlexAuthUrl] = useState<string | null>(null);
 
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -139,13 +134,6 @@ export default function LoginContent() {
 
   useQuickConnectUpdates(qcSecret, onAuthorized);
 
-  // Custom wrapper for usePlexPinAuth to handle 400 errors
-  usePlexPinAuth(plexPinId, (data) => {
-    // Stop polling if we got a successful auth
-    setPlexPinId(null);
-    onAuthorized(data);
-  });
-
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -163,9 +151,7 @@ export default function LoginContent() {
       }
 
       const config: any = {};
-      if (selectedProvider === ProviderType.JELLYFIN || selectedProvider === ProviderType.PLEX || selectedProvider === ProviderType.EMBY) {
-        if (serverUrl) config.serverUrl = serverUrl;
-      } else if (selectedProvider === ProviderType.TMDB) {
+      if (selectedProvider === ProviderType.TMDB) {
         if (tmdbToken) config.tmdbToken = tmdbToken;
       }
 
@@ -266,36 +252,6 @@ export default function LoginContent() {
     });
   };
 
-  const startPlexPinAuth = async () => {
-    setLoading(true);
-
-    const promise = async () => {
-      const pinData = await createPlexPinClient();
-      const authUrl = buildPlexAuthUrl(pinData.code);
-      return {
-        id: pinData.id,
-        code: pinData.code,
-        authUrl
-      };
-    };
-
-    toast.promise(promise(), {
-      loading: "Creating Plex PIN...",
-      success: (data) => {
-        setPlexPinId(data.id);
-        setPlexPinCode(data.code);
-        setPlexAuthUrl(data.authUrl);
-        setLoading(false);
-        return "Plex PIN created";
-      },
-      error: (err) => {
-        setLoading(false);
-        return { message: "Failed to create Plex PIN", description: getErrorMessage(err) };
-      },
-      position: 'top-right'
-    });
-  };
-
   return (
     <>
       <SecureContextCopyFallback
@@ -316,22 +272,10 @@ export default function LoginContent() {
             <div className="space-y-4">
               {!providerLock && (
                 <Tabs value={selectedProvider} onValueChange={setSelectedProvider} className="w-full">
-                  <TabsList className="grid w-full grid-cols-5 h-9">
+                  <TabsList className="grid w-full grid-cols-2 h-9">
                     <TabsTrigger value={ProviderType.NATIVE} className="text-xs font-semibold">
                       <User className="size-3" />
                       fanbIQ
-                    </TabsTrigger>
-                    <TabsTrigger value={ProviderType.JELLYFIN} className="text-xs font-semibold">
-                      <SiJellyfin />
-                      Jellyfin
-                    </TabsTrigger>
-                    <TabsTrigger value={ProviderType.EMBY} className="text-xs font-semibold">
-                      <SiEmby />
-                      Emby
-                    </TabsTrigger>
-                    <TabsTrigger value={ProviderType.PLEX} className="text-xs font-semibold">
-                      <SiPlex />
-                      Plex
                     </TabsTrigger>
                     <TabsTrigger value={ProviderType.TMDB} className="text-xs font-semibold">
                       <SiThemoviedatabase />
@@ -379,14 +323,10 @@ export default function LoginContent() {
                   setQcCode={setQcCode}
                   sessionCodeParam={sessionCodeParam}
                   hasQuickConnect={capabilities.hasQuickConnect}
-                  isExperimental={providerLock ? capabilities.isExperimental : selectedProvider === ProviderType.EMBY}
+                  isExperimental={providerLock ? capabilities.isExperimental : false}
                   onProfilePictureChange={setProfilePicture}
                   activeTab={activeTab}
                   setActiveTab={setActiveTab}
-                  startPlexPinAuth={startPlexPinAuth}
-                  plexPinCode={plexPinCode}
-                  setPlexPinCode={setPlexPinCode}
-                  plexAuthUrl={plexAuthUrl}
                 />
               )}
 

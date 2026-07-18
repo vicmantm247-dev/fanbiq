@@ -65,13 +65,9 @@ export function useMovieActions<T extends MediaItem>(initialMovie: T | null, opt
 
   const isGuest = sessionData?.isGuest || false;
   const activeProvider = sessionData?.provider || runtimeProvider;
-  const useWatchlist = activeProvider === ProviderType.PLEX
-    ? true
-    : activeProvider === ProviderType.JELLYFIN
-      ? (runtimeUseWatchlist && settings.useWatchlist)
-      : false;
+  const useWatchlist = false;
 
-  const isInList = (useWatchlist ? currentMovie?.UserData?.Likes : currentMovie?.UserData?.IsFavorite) ?? false;
+  const isInList = currentMovie?.UserData?.IsFavorite ?? false;
   
   // A movie is liked by me if it's in the likedBy list for the CORRECT session context
   const isLikedByMe = options.isLiked || (currentMovie?.likedBy?.some(l => 

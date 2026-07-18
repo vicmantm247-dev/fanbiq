@@ -84,7 +84,7 @@ export function FlickPreviewCard({
         }}
         style={{ animation: 'flickPreviewFadeUp 0.4s ease both', animationDelay: `${animationDelay}ms` }}
       >
-        <div className="rounded-lg overflow-hidden relative bg-background">
+        <div className="rounded-2xl overflow-hidden relative bg-background">
           <video
             ref={videoRef}
             muted
@@ -92,7 +92,7 @@ export function FlickPreviewCard({
             playsInline
             preload="none"
             poster={flick.posterUrl ?? flick.thumbnailUrl}
-            className="w-full block object-cover"
+            className="w-full block object-cover max-h-[35vh]"
           />
 
 

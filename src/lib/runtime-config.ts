@@ -34,7 +34,7 @@ export function getRuntimeConfig(overrides?: Partial<RuntimeConfig>): RuntimeCon
   }
 
   const provider = (overrides?.provider || config.app.provider) as ProviderType;
-  const capabilities = PROVIDER_CAPABILITIES[provider] || PROVIDER_CAPABILITIES[ProviderType.JELLYFIN];
+  const capabilities = PROVIDER_CAPABILITIES[provider] || PROVIDER_CAPABILITIES[ProviderType.NATIVE];
 
   const providerLock = config.app.providerLock;
   

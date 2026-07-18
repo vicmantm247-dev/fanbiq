@@ -11,31 +11,22 @@ const envSchema = z.object({
   DATABASE_AUTH_TOKEN: z.string().optional(),
 
   // Provider
-  PROVIDER: z.enum(ProviderType).default(ProviderType.JELLYFIN),
+  PROVIDER: z.enum(ProviderType).default(ProviderType.NATIVE),
   PROVIDER_LOCK: z.preprocess((val) => val === 'true' || val === true, z.boolean()).default(true),
 
   // Server URLs
-  JELLYFIN_URL: z.string().optional(),
-  JELLYFIN_PUBLIC_URL: z.string().optional(),
-  EMBY_URL: z.string().optional(),
-  EMBY_PUBLIC_URL: z.string().optional(),
-  PLEX_URL: z.string().optional(),
-  PLEX_PUBLIC_URL: z.string().optional(),
+  SERVER_URL: z.string().optional(),
+  SERVER_PUBLIC_URL: z.string().optional(),
 
   // Auth & Security
   AUTH_SECRET: z.string().min(32, "AUTH_SECRET must be at least 32 characters").optional(),
   USE_SECURE_COOKIES: z.preprocess((val) => val === 'true', z.boolean()).default(false),
   ALLOW_PRIVATE_PROVIDER_URLS: z.preprocess((val) => val === 'true', z.boolean()).default(false),
-  PLEX_IMAGE_ALLOWED_HOSTS: z.string().optional(),
   ADMIN_USERNAME: z.string().optional(),
-  JELLYFIN_ADMIN_USERNAME: z.string().optional(),
-  EMBY_ADMIN_USERNAME: z.string().optional(),
-  PLEX_ADMIN_USERNAME: z.string().optional(),
 
   // Provider Specific
   TMDB_ACCESS_TOKEN: z.string().optional(),
   TMDB_DEFAULT_REGION: z.string().optional(),
-  PLEX_TOKEN: z.string().optional(),
 
   // Cloudinary
   CLOUDINARY_CLOUD_NAME: z.string().optional(),
@@ -82,20 +73,14 @@ const getDefaultDbPath = () => {
 const DATABASE_URL = parsedEnv.DATABASE_URL || getDefaultDbPath();
 const DATABASE_AUTH_TOKEN = parsedEnv.DATABASE_AUTH_TOKEN;
 
-const SERVER_URL = parsedEnv.JELLYFIN_URL || parsedEnv.EMBY_URL || parsedEnv.PLEX_URL || 
-  (parsedEnv.PROVIDER === ProviderType.JELLYFIN ? 'http://localhost:8096' : 
-   parsedEnv.PROVIDER === ProviderType.EMBY ? 'http://localhost:8096' : 
-   parsedEnv.PROVIDER === ProviderType.PLEX ? 'http://localhost:32400' : '');
+const SERVER_URL = parsedEnv.SERVER_URL || '';
 
-const SERVER_PUBLIC_URL = (parsedEnv.JELLYFIN_PUBLIC_URL || parsedEnv.EMBY_PUBLIC_URL || parsedEnv.PLEX_PUBLIC_URL || SERVER_URL || '').replace(/\/$/, '');
+const SERVER_PUBLIC_URL = (parsedEnv.SERVER_PUBLIC_URL || SERVER_URL || '').replace(/\/$/, '');
 
 const RAW_BASE_PATH = parsedEnv.URL_BASE_PATH.replace(/\/$/, '');
 const BASE_PATH = RAW_BASE_PATH && !RAW_BASE_PATH.startsWith('/') ? `/${RAW_BASE_PATH}` : RAW_BASE_PATH;
 
-const ADMIN_USERNAME = parsedEnv.ADMIN_USERNAME || 
-  (parsedEnv.PROVIDER === ProviderType.JELLYFIN ? parsedEnv.JELLYFIN_ADMIN_USERNAME :
-   parsedEnv.PROVIDER === ProviderType.EMBY ? parsedEnv.EMBY_ADMIN_USERNAME :
-   parsedEnv.PROVIDER === ProviderType.PLEX ? parsedEnv.PLEX_ADMIN_USERNAME : undefined);
+const ADMIN_USERNAME = parsedEnv.ADMIN_USERNAME;
 
 export const config = {
   ...parsedEnv,
@@ -120,7 +105,7 @@ export const config = {
     appPublicUrl: parsedEnv.APP_PUBLIC_URL,
     provider: parsedEnv.PROVIDER,
     providerLock: parsedEnv.PROVIDER_LOCK,
-    useWatchlist: parsedEnv.JELLYFIN_USE_WATCHLIST,
+    useWatchlist: false,
   },
   auth: {
     secret: parsedEnv.AUTH_SECRET,
