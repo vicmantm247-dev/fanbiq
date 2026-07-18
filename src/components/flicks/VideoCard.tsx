@@ -34,6 +34,7 @@ async function trackFlickEvent(flickId: string, eventType: string, payload?: Rec
 export interface Flick {
   id: string;
   movieId?: string;
+  movieMediaType?: 'movie' | 'tv';
   videoUrl: string | null;
   posterUrl?: string;
   moviePosterUrl?: string;
@@ -85,6 +86,9 @@ export function VideoCard({ flick, isActive, isFeedActive, initialIsFollowed = f
 
   const [commentsOpen, setCommentsOpen] = useState(false);
   const [showJoinPrompt, setShowJoinPrompt] = useState(false);
+  const [hasSkippableActivity, setHasSkippableActivity] = useState(false);
+  const [skipRecorded, setSkipRecorded] = useState(false);
+  const [hasCompleted, setHasCompleted] = useState(false);
 
   const { openMovie } = useMovieDetail();
   const { mutateAsync: addToLikes } = useSwipe();
@@ -95,6 +99,35 @@ export function VideoCard({ flick, isActive, isFeedActive, initialIsFollowed = f
   useEffect(() => {
     setFollowed(initialIsFollowed);
   }, [initialIsFollowed]);
+
+  useEffect(() => {
+    setSkipRecorded(false);
+    setHasCompleted(false);
+    setHasSkippableActivity(false);
+  }, [flick.id]);
+
+  useEffect(() => {
+    if (isActive && isFeedActive !== false) {
+      setHasSkippableActivity(true);
+      return;
+    }
+
+    if (!isActive && hasSkippableActivity && !skipRecorded) {
+      const video = videoRef.current;
+      const watchedSeconds = video?.currentTime ?? 0;
+
+      if (!hasCompleted && watchedSeconds < 3) {
+        void trackFlickEvent(flick.id, "flick_skipped", {
+          movieId: flick.movieId,
+          movieTitle: flick.movieTitle,
+          uploader: flick.uploader,
+        });
+        setSkipRecorded(true);
+      }
+
+      setHasSkippableActivity(false);
+    }
+  }, [flick.id, flick.movieId, flick.movieTitle, flick.uploader, hasCompleted, hasSkippableActivity, isActive, isFeedActive, skipRecorded]);
 
   useEffect(() => {
     setShowJoinPrompt(false);
@@ -213,7 +246,9 @@ export function VideoCard({ flick, isActive, isFeedActive, initialIsFollowed = f
       });
       return;
     }
-    openMovie(flick.movieId);
+    openMovie(flick.movieId, {
+      mediaType: flick.movieMediaType,
+    });
   };
 
   const handleFollow = (nextState: boolean) => {
@@ -243,6 +278,12 @@ export function VideoCard({ flick, isActive, isFeedActive, initialIsFollowed = f
         Name: flick.movieTitle,
         OriginalTitle: flick.movieTitle,
       },
+    });
+
+    void trackFlickEvent(flick.id, "flick_liked", {
+      movieId: itemId,
+      movieTitle: flick.movieTitle,
+      uploader: flick.uploader,
     });
 
     void trackFlickEvent(flick.id, "flick_added_to_likes_list", {
@@ -311,6 +352,7 @@ export function VideoCard({ flick, isActive, isFeedActive, initialIsFollowed = f
             onWaiting={() => setIsVideoLoading(true)}
             onEnded={() => {
               setPlaying(false);
+              setHasCompleted(true);
               if (videoRef.current) {
                 videoRef.current.pause();
               }

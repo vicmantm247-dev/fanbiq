@@ -216,6 +216,7 @@ export const flicks = pgTable('flicks', {
   movieTitle: text('movie_title').notNull(),
   movieYear: integer('movie_year').notNull(),
   tmdbId: integer('tmdb_id'),
+  movieMediaType: text('movie_media_type'),
   movieBackdropUrl: text('movie_backdrop_url').default(''),
   uploader: text('uploader').notNull().default('anonymous'),
   caption: text('caption').default(''),

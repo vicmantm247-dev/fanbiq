@@ -246,7 +246,11 @@ export function SwipeVideoFeed({ isActive = true }: SwipeVideoFeedProps) {
   const openActiveMovie = useCallback(() => {
     if (!currentFlick) return;
     const movieId = currentFlick.movieId ?? currentFlick.id;
-    openMovie(movieId, { showLikedBy: false, sessionCode });
+    openMovie(movieId, {
+      showLikedBy: false,
+      sessionCode,
+      mediaType: currentFlick.movieMediaType,
+    });
   }, [currentFlick, openMovie, sessionCode]);
 
   const hasAppliedFilters = false;

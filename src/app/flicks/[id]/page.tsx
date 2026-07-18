@@ -134,6 +134,7 @@ export default async function FlickDetailPage({ params }: FlickDetailPageProps) 
   const flickData = {
     id: flick.flick.id,
     movieId: flick.flick.tmdbId?.toString() ?? undefined,
+    movieMediaType: flick.flick.movieMediaType ?? undefined,
     videoUrl: flick.flick.videoUrl,
     posterUrl: getCloudinaryVideoThumbnailUrl(flick.flick.videoUrl) || flick.flick.movieBackdropUrl || undefined,
     moviePosterUrl: undefined,

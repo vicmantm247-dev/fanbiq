@@ -23,11 +23,11 @@ export async function POST(request: NextRequest) {
 
     const formData = await request.formData();
     const video = formData.get('video') as File | null;
-    const title = formData.get('title')?.toString() ?? '';
     const description = formData.get('description')?.toString() ?? '';
     const movieTitle = formData.get('movieTitle')?.toString() ?? '';
     const movieYear = formData.get('movieYear')?.toString() ?? '';
     const tmdbId = formData.get('tmdbId')?.toString() ?? '';
+    const movieMediaType = formData.get('movieMediaType')?.toString() ?? '';
     const moviePosterUrl = formData.get('moviePosterUrl')?.toString() ?? '';
     const movieBackdropUrl = formData.get('movieBackdropUrl')?.toString() ?? '';
     const tagsRaw = formData.get('tags')?.toString() ?? '[]';
@@ -39,9 +39,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (!title || !movieTitle) {
+    if (!movieTitle) {
       return NextResponse.json(
-        { error: "Title and movie title are required" },
+        { error: "Movie title is required" },
         { status: 400 }
       );
     }
@@ -148,13 +148,14 @@ export async function POST(request: NextRequest) {
       movieTitle,
       movieYear: parseInt(movieYear, 10),
       tmdbId: tmdbId ? parseInt(tmdbId, 10) : null,
+      movieMediaType: movieMediaType || null,
       movieBackdropUrl: movieBackdropUrl || '',
       uploader: uploaderName,
       caption: description || '',
       tags: parsedTags,
     }).returning();
 
-    logger.info(`Video upload saved: ${title} by ${uploaderName}`);
+    logger.info(`Video upload saved: ${saved.movieTitle} by ${uploaderName}`);
 
     const responseFlick = {
       id: saved.id,
@@ -163,6 +164,7 @@ export async function POST(request: NextRequest) {
       movieTitle: saved.movieTitle,
       movieYear: saved.movieYear,
       tmdbId: saved.tmdbId,
+      movieMediaType: saved.movieMediaType,
       movieBackdropUrl: saved.movieBackdropUrl,
       uploader: saved.uploader,
       caption: saved.caption,

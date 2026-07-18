@@ -19,6 +19,8 @@ export async function GET(request: NextRequest) {
     const pageLimit = Number.isNaN(limit) || limit < 1 ? 10 : limit;
     const offset = (pageNumber - 1) * pageLimit;
 
+    const candidateLimit = currentUserId ? Math.max(pageLimit * 20, 500) : pageLimit;
+
     const baseQuery = db
       .select({
         flick: flicks,
@@ -27,8 +29,8 @@ export async function GET(request: NextRequest) {
       .from(flicks)
       .leftJoin(nativeUsers, eq(flicks.uploader, nativeUsers.username))
       .orderBy(desc(flicks.createdAt))
-      .limit(pageLimit)
-      .offset(offset);
+      .limit(candidateLimit)
+      .offset(currentUserId ? 0 : offset);
 
     const rows = tag
       ? await baseQuery.where(arrayContains(flicks.tags, [tag]))
@@ -49,9 +51,15 @@ export async function GET(request: NextRequest) {
         )
       : new Set<string>();
 
-    const [{ count }] = await db
+    const countQuery = db
       .select({ count: sql<number>`count(*)` })
       .from(flicks);
+
+    if (tag) {
+      countQuery.where(arrayContains(flicks.tags, [tag]));
+    }
+
+    const [{ count }] = await countQuery;
 
     const mappedRows = rows.map((row: { flick: FlickRow; userId: string | null }) => {
       const row_data = row.flick;
@@ -62,6 +70,7 @@ export async function GET(request: NextRequest) {
       return {
         id: row_data.id,
         movieId: row_data.tmdbId ? String(row_data.tmdbId) : undefined,
+        movieMediaType: row_data.movieMediaType ?? undefined,
         videoUrl: row_data.videoUrl,
         movieTitle: row_data.movieTitle,
         movieYear: row_data.movieYear,
@@ -78,13 +87,19 @@ export async function GET(request: NextRequest) {
       };
     });
 
-    const rankedFlicks = await FlickPersonalizationService.getRankedFlicks(currentUserId, mappedRows);
+    const rankedFlicks = currentUserId
+      ? await FlickPersonalizationService.getRankedFlicks(currentUserId, mappedRows)
+      : mappedRows;
+
+    const pagedFlicks = currentUserId
+      ? rankedFlicks.slice(offset, offset + pageLimit)
+      : rankedFlicks;
 
     return NextResponse.json({
-      flicks: rankedFlicks,
-      total: count,
+      flicks: pagedFlicks,
+      total: currentUserId ? rankedFlicks.length : count,
       page: pageNumber,
-      hasMore: offset + rows.length < count,
+      hasMore: currentUserId ? offset + pageLimit < rankedFlicks.length : offset + rows.length < count,
     });
   } catch (error) {
     return NextResponse.json(

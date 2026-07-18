@@ -1,5 +1,6 @@
 import { and, desc, eq, inArray, isNull, sql } from "drizzle-orm";
 import { db, flickInteractions, flickPersonalizationProfiles, flicks } from "@/lib/db";
+import { logger } from "@/lib/logger";
 
 export type FlickInteractionEvent =
   | "flick_viewed"
@@ -67,15 +68,32 @@ export class FlickPersonalizationService {
       metadata: payload.metadata ?? null,
     }).returning();
 
-    await this.refreshProfile(userId);
+    try {
+      await this.refreshProfile(userId);
+    } catch (error) {
+      logger.error('[FlickPersonalization] refreshProfile failed', error);
+    }
+
     return saved;
   }
 
   static async refreshProfile(userId: string) {
-    const interactions = await db.select().from(flickInteractions).where(eq(flickInteractions.userId, userId));
+    const interactions = await db
+      .select({
+        interaction: flickInteractions,
+        flick: flicks,
+      })
+      .from(flickInteractions)
+      .leftJoin(flicks, eq(sql`${flicks.id}::text`, flickInteractions.flickId))
+      .where(eq(flickInteractions.userId, userId))
+      .orderBy(desc(flickInteractions.createdAt))
+      .limit(500);
+
     const preferences: Record<string, number> = {};
 
-    for (const interaction of interactions) {
+    for (const interactionRecord of interactions) {
+      const interaction = interactionRecord.interaction;
+      const flick = interactionRecord.flick;
       const weight = scoreEvent(interaction.eventType as FlickInteractionEvent);
       if (weight === 0) continue;
 
@@ -89,6 +107,13 @@ export class FlickPersonalizationService {
           : `flick:${interaction.flickId}`;
 
       preferences[bucket] = (preferences[bucket] || 0) + weight;
+
+      if (flick?.tags?.length) {
+        for (const tag of flick.tags) {
+          const tagKey = `tag:${tag}`;
+          preferences[tagKey] = (preferences[tagKey] || 0) + weight;
+        }
+      }
     }
 
     const normalized = Object.fromEntries(

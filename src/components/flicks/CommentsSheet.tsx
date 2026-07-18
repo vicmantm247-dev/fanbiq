@@ -213,6 +213,17 @@ export function CommentsSheet({
   open,
   onClose,
 }: CommentsSheetProps) {
+  async function trackFlickEvent(flickId: string, eventType: string, payload?: Record<string, unknown>) {
+    try {
+      await fetch('/api/flicks/events', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ flickId, eventType, ...payload }),
+      });
+    } catch {
+      // never block the UI on personalization tracking
+    }
+  }
   const [text, setText] = useState("");
   const [localComments, setLocalComments] = useState<Comment[]>(comments);
   const [loading] = useState(false); // swap with real fetch state
@@ -247,6 +258,11 @@ export function CommentsSheet({
 
     setLocalComments((prev) => [newComment, ...prev]);
     setText("");
+    void trackFlickEvent(flick.id, "flick_comment_added", {
+      movieId: flick.movieId,
+      movieTitle: flick.movieTitle,
+      uploader: flick.uploader,
+    });
   }
 
   function handleKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {

@@ -112,7 +112,11 @@ export function FlickDetailClient({ flick }: FlickDetailClientProps) {
           onRewind={() => {
             const movieId = flick.movieId ?? flick.id;
             if (movieId) {
-              openMovie(movieId, { showLikedBy: false, sessionCode: session?.code ?? null });
+              openMovie(movieId, {
+                showLikedBy: false,
+                sessionCode: session?.code ?? null,
+                mediaType: flick.movieMediaType,
+              });
             }
           }}
           onSwipeLeft={() => undefined}
