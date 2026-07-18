@@ -46,7 +46,7 @@ export async function GET(
         }
 
         // Guests either have a locally-stored profile picture (above) or none at all.
-        // Never fall through to the provider — their synthetic ID is unknown to Jellyfin/Emby/Plex.
+        // Never fall through to the provider — their synthetic ID is unknown to external systems.
         if (id.startsWith("guest-")) {
             return new NextResponse("User image not found", { status: 404 });
         }

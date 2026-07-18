@@ -1,9 +1,8 @@
 "use client";
 import { useEffect, useState, useCallback, useMemo } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { toast } from "sonner";
-import { useQuickConnectUpdates } from "@/lib/use-updates";
 import Image from "next/image";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import logo from "../../../public/icon0.svg"
@@ -18,8 +17,6 @@ import { UniversalView } from "./UniversalView";
 import { NativeView } from "./NativeView";
 import { SiThemoviedatabase } from "react-icons/si";
 import { User } from "lucide-react";
-import GradientText from "../ui/gradient-text";
-import { SecureContextCopyFallback } from "../SecureContextCopyFallback";
 
 
 
@@ -34,7 +31,6 @@ export default function LoginContent() {
   }, [selectedProvider, providerLock, initialCapabilities]);
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
-  const [serverUrl, setServerUrl] = useState("");
   const [tmdbToken, setTmdbToken] = useState("");
   const [guestName, setGuestName] = useState("");
   const [guestSessionCode, setGuestSessionCode] = useState("");
@@ -42,10 +38,6 @@ export default function LoginContent() {
   const [loading, setLoading] = useState(false);
 
   const [wasMadeAdmin, setWasMadeAdmin] = useState(false);
-  const [copied, setCopied] = useState(false);
-  const [isFallbackOpen, setIsFallbackOpen] = useState(false);
-  const [qcCode, setQcCode] = useState<string | null>(null);
-  const [qcSecret, setQcSecret] = useState<string | null>(null);
 
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -108,20 +100,6 @@ export default function LoginContent() {
     }
   }, [sessionCodeParam]);
 
-  const copyToClipboard = async () => {
-    if (qcCode) {
-      if (!window.isSecureContext || !navigator.clipboard) {
-        setIsFallbackOpen(true);
-        return;
-      }
-      await navigator.clipboard.writeText(qcCode);
-      setCopied(true);
-      toast.success("Code copied to clipboard", { position: 'top-right' });
-      setTimeout(() => setCopied(false), 2000);
-    }
-  };
-
-
   const onAuthorized = useCallback((data?: any) => {
     if (data?.wasMadeAdmin) {
       setWasMadeAdmin(true);
@@ -131,8 +109,6 @@ export default function LoginContent() {
       window.location.href = callbackUrl;
     }
   }, [searchParams, basePath]);
-
-  useQuickConnectUpdates(qcSecret, onAuthorized);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -224,42 +200,9 @@ export default function LoginContent() {
     });
   };
 
-  const startQuickConnect = async () => {
-    setLoading(true);
-
-    const promise = async () => {
-      const res = await apiClient.get("/api/auth/quick-connect", {
-        params: { serverUrl: providerLock ? undefined : serverUrl }
-      });
-      const data = res.data;
-      if (!data.Code) throw new Error("Quick connect failed");
-      return data;
-    };
-
-    toast.promise(promise(), {
-      loading: "Starting quick connect...",
-      success: (data) => {
-        setQcCode(data.Code);
-        setQcSecret(data.Secret);
-        setLoading(false);
-        return "Quick connect started";
-      },
-      error: (err) => {
-        setLoading(false);
-        return { message: "Quick connect failed to initialize", description: getErrorMessage(err) };
-      },
-      position: 'top-right'
-    });
-  };
 
   return (
     <>
-      <SecureContextCopyFallback
-        open={isFallbackOpen}
-        onOpenChange={setIsFallbackOpen}
-        title="Quick Connect Code"
-        value={qcCode || ""}
-      />
       <Image src={logo} alt="Logo" className="size-16 dark:invert dark:opacity-90 opacity-75 absolute top-16" loading="eager" />
       <Card className={cn("w-full border-border bg-card text-card-foreground pt-8", !providerLock ? "max-w-sm" : "max-w-xs")}>
         <CardContent className={cn("transition-all duration-300 h-auto", !providerLock && "px-5")}>
@@ -303,8 +246,6 @@ export default function LoginContent() {
                 <AuthView
                   provider={selectedProvider}
                   providerLock={providerLock}
-                  serverUrl={serverUrl}
-                  setServerUrl={setServerUrl}
                   username={username}
                   setUsername={setUsername}
                   password={password}
@@ -316,13 +257,7 @@ export default function LoginContent() {
                   loading={loading}
                   handleLogin={handleLogin}
                   handleGuestLogin={handleGuestLogin}
-                  startQuickConnect={startQuickConnect}
-                  qcCode={qcCode}
-                  copied={copied}
-                  copyToClipboard={copyToClipboard}
-                  setQcCode={setQcCode}
                   sessionCodeParam={sessionCodeParam}
-                  hasQuickConnect={capabilities.hasQuickConnect}
                   isExperimental={providerLock ? capabilities.isExperimental : false}
                   onProfilePictureChange={setProfilePicture}
                   activeTab={activeTab}

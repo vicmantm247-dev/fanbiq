@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getValidatedSession } from "@/lib/server/validate-session";
 import { SessionData } from "@/types";
 import axios from "axios";
 import bcrypt from "bcryptjs";
@@ -96,11 +95,7 @@ export async function POST(request: NextRequest) {
             session.isLoggedIn = true;
             await session.save();
 
-            logger.info(`[Auth] Native login success: ${user.username}`, {
-              userId: session.user.Id,
-              isLoggedIn: session.isLoggedIn,
-              sessionVersion: session.user.sessionVersion
-            });
+            logger.info(`[Auth] Native login success: ${user.username}`);
             
             // Create JSON response with the Set-Cookie header from iron-session
             const jsonResponse = NextResponse.json({ success: true, user: session.user });

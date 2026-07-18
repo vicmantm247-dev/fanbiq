@@ -110,6 +110,4 @@ export const POPULAR_TMDB_WATCH_PROVIDER_NAMES = [
     "TV4 Play",
 ];
 
-export const ALLOWED_DEFAULT_PLEX_IMAGE_URL = "https://metadata-static.plex.tv";
-
 export const DEFAULT_LANGUAGES = ["en"]; // English default for selection highlighting

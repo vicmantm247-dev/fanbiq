@@ -333,35 +333,3 @@ export function useUpdates() {
     }, [sessionCode, userId, queryClient, openMovie, basePath, invalidateSessionDeck]);
 }
 
-export function useQuickConnectUpdates(qcSecret?: string | null, onAuthorized?: (data: any) => void) {
-    useEffect(() => {
-        if (!qcSecret) return;
-
-        const poll = async () => {
-            try {
-                const res = await apiClient.post("/api/auth/quick-connect", { secret: qcSecret });
-                const data = res.data;
-                if (data.success) {
-                    onAuthorized?.(data);
-                    return true;
-                }
-            } catch (err) {
-                logger.error("Quick connect polling error:", err);
-            }
-            return false;
-        };
-
-        const interval = setInterval(async () => {
-            const finished = await poll();
-            if (finished) {
-                clearInterval(interval);
-            }
-        }, 5000);
-
-        poll();
-
-        return () => {
-            clearInterval(interval);
-        };
-    }, [qcSecret, onAuthorized]);
-}

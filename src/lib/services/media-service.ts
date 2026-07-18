@@ -397,138 +397,7 @@ export class MediaService {
     watchProviders: string[] | undefined,
     watchRegion: string
   ): Promise<MediaItem[]> {
-    const providerName = auth.provider as ProviderType;
-    const allItems: MediaItem[] = [];
-
     return this.fetchAllTMDBItems(provider, auth, sessionFilters, watchProviders, watchRegion);
-
-    return allItems;
-  }
-
-  private static async fetchAllJellyfinEmbyItems(
-    provider: any,
-    auth: any,
-    includedLibraries: string[],
-    sessionFilters: Filters | null,
-    watchProviders: string[] | undefined,
-    watchRegion: string
-  ): Promise<MediaItem[]> {
-    const allItems: MediaItem[] = [];
-    const seenIds = new Set<string>();
-    const batchSize = 100;
-    let offset = 0;
-    let hasMore = true;
-    const maxItems = 10000; // Safety limit
-
-    // Get libraries to fetch from
-    let libraries = includedLibraries;
-    if (libraries.length === 0) {
-      const availableLibraries = await provider.getLibraries(auth);
-      libraries = availableLibraries.map((lib: any) => lib.Id);
-    }
-
-    // Fetch from each library
-    for (const libraryId of libraries) {
-      offset = 0;
-      hasMore = true;
-
-      while (hasMore && allItems.length < maxItems) {
-        try {
-          const items = await provider.getItems({
-            libraries: [libraryId],
-            genres: sessionFilters?.genres,
-            excludedGenres: sessionFilters?.excludedGenres,
-            years: (sessionFilters?.yearRange && sessionFilters.yearRange[0] !== undefined && sessionFilters.yearRange[1] !== undefined) ? Array.from({ length: sessionFilters.yearRange[1] - sessionFilters.yearRange[0] + 1 }, (_, i) => sessionFilters.yearRange![0] + i) : undefined,
-            ratings: sessionFilters?.officialRatings,
-            excludedRatings: sessionFilters?.excludedOfficialRatings,
-            minCommunityRating: sessionFilters?.minCommunityRating,
-            runtimeRange: sessionFilters?.runtimeRange,
-            watchProviders,
-            watchRegion,
-            themes: sessionFilters?.themes,
-            excludedThemes: sessionFilters?.excludedThemes,
-            tmdbLanguages: sessionFilters?.tmdbLanguages,
-            unplayedOnly: sessionFilters?.unplayedOnly,
-            sortBy: "SortName", // Use consistent sort for fetching
-            limit: batchSize,
-            offset,
-          }, auth);
-
-          if (items.length === 0) {
-            hasMore = false;
-            break;
-          }
-
-          for (const item of items) {
-            if (item && item.Id && !seenIds.has(item.Id)) {
-              seenIds.add(item.Id);
-              allItems.push(item);
-            }
-          }
-
-          offset += batchSize;
-          hasMore = items.length === batchSize;
-        } catch (error) {
-          logger.error("Error fetching items for deck:", error);
-          hasMore = false;
-        }
-      }
-    }
-
-    return allItems;
-  }
-
-  private static async fetchAllPlexItems(
-    provider: any,
-    auth: any,
-    includedLibraries: string[],
-    sessionFilters: Filters | null
-  ): Promise<MediaItem[]> {
-    const allItems: MediaItem[] = [];
-    const seenIds = new Set<string>();
-
-    // Get libraries to fetch from
-    let libraries = includedLibraries;
-    if (libraries.length === 0) {
-      const availableLibraries = await provider.getLibraries(auth);
-      libraries = availableLibraries
-        .filter((lib: any) => lib.CollectionType === "movies")
-        .map((lib: any) => lib.Id);
-    }
-
-    // Fetch from each library section
-    for (const libraryId of libraries) {
-      try {
-        // Plex doesn't support pagination well in the same way, so fetch larger batches
-        const items = await provider.getItems({
-          libraries: [libraryId],
-          genres: sessionFilters?.genres,
-          excludedGenres: sessionFilters?.excludedGenres,
-          years: (sessionFilters?.yearRange && sessionFilters.yearRange[0] !== undefined && sessionFilters.yearRange[1] !== undefined) ? Array.from({ length: sessionFilters.yearRange[1] - sessionFilters.yearRange[0] + 1 }, (_, i) => sessionFilters.yearRange![0] + i) : undefined,
-          ratings: sessionFilters?.officialRatings,
-          excludedRatings: sessionFilters?.excludedOfficialRatings,
-          minCommunityRating: sessionFilters?.minCommunityRating,
-          runtimeRange: sessionFilters?.runtimeRange,
-          themes: sessionFilters?.themes,
-          excludedThemes: sessionFilters?.excludedThemes,
-          tmdbLanguages: sessionFilters?.tmdbLanguages,
-          unplayedOnly: sessionFilters?.unplayedOnly,
-          limit: 1000, // Fetch large batch
-          offset: 0,
-        }, auth);
-
-        for (const item of items) {
-          if (item && item.Id && !seenIds.has(item.Id)) {
-            seenIds.add(item.Id);
-            allItems.push(item);
-          }
-        }
-      } catch (error) {
-        logger.error("Error fetching Plex items for deck:", error);
-      }
-    }
-
-    return allItems;
   }
 
   private static async fetchAllTMDBItems(
@@ -593,8 +462,8 @@ export class MediaService {
   private static async getSoloItems(sessionFilters: Filters | null, auth: any, provider: any, excludeIds: Set<string>, includedLibraries: string[], watchProviders: string[] | undefined, watchRegion: string, page: number, limit: number, effectiveOffset: number) {
     const soloYears = sessionFilters?.yearRange ? Array.from({ length: (sessionFilters.yearRange[1] ?? 2025) - (sessionFilters.yearRange[0] ?? 1900) + 1 }, (_, i) => (sessionFilters.yearRange?.[0] ?? 1900) + i) : undefined;
     
-    // If we have filters but the provider might not support them all (like Plex), 
-    // we fetch more items to ensure we have enough after client-side filtering.
+    // If we have filters and some may not be supported server-side,
+    // fetch more items to ensure enough remain after client-side filtering.
     const fetchLimit = (sessionFilters && (
       sessionFilters.genres?.length || 
       sessionFilters.yearRange || 

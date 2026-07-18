@@ -24,12 +24,8 @@ export async function getValidatedSession(): Promise<IronSession<SessionData>> {
     return defaultSession;
   }
 
-  if (session.user.provider !== "native") {
-    return session;
-  }
-
   if (session.user.sessionVersion === undefined) {
-    logger.info(`[ValidateSession] Missing sessionVersion for native user ${session.user.Id}`);
+    logger.info(`[ValidateSession] Missing sessionVersion for user ${session.user.Id}`);
     await session.destroy();
     return defaultSession;
   }

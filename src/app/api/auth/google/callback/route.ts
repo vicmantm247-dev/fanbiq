@@ -12,6 +12,7 @@ import bcrypt from "bcryptjs";
 import { generateOTP } from "@/lib/utils";
 import { sendVerificationEmail } from "@/lib/email";
 import { usernameSchema } from "@/lib/validations";
+import { ProviderType } from "@/lib/providers/types";
 
 const GOOGLE_TOKEN_URL = "https://oauth2.googleapis.com/token";
 const GOOGLE_USERINFO_URL = "https://openidconnect.googleapis.com/v1/userinfo";
@@ -219,7 +220,7 @@ export async function GET(request: NextRequest) {
       Name: username,
       DisplayName: displayName,
       DeviceId: `google-${userId}`,
-      provider: config.app.provider || "google",
+      provider: ProviderType.NATIVE,
       isAdmin: false,
       sessionVersion: (existingUser?.sessionVersion ?? 1),
     };

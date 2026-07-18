@@ -117,13 +117,3 @@ export interface ImageResponse {
   data: Buffer | ArrayBuffer;
   contentType: string;
 }
-
-
-export interface AuthContext {
-  accessToken?: string;
-  deviceId?: string;
-  userId?: string;
-  serverUrl?: string;
-  tmdbToken?: string;
-  watchRegion?: string;
-}
