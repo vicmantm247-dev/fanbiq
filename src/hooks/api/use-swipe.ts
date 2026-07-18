@@ -63,6 +63,7 @@ export function useSwipe() {
           
           const newLike = {
             ...swipedItem,
+            mediaType: swipedItem.mediaType || payload.mediaType || undefined,
             swipedAt: new Date().toISOString(),
             sessionCode: targetSessionCode,
             likedBy: [

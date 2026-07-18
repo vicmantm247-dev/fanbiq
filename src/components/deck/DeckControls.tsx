@@ -41,13 +41,14 @@ export function DeckControls({
     <div className="flex items-center justify-center gap-6 z-2 w-full">
       <Button
         size="icon"
-        variant="secondary"
-        className="h-12 w-12 relative"
+        variant="ghost"
+        className="p-0 h-8 w-8 relative text-white hover:text-white"
         onClick={onOpenFilter}
+        aria-label="Share"
       >
-        <Share2 className="size-5.5" />
+        <Share2 className="size-6 text-white" />
         {hasAppliedFilters && (
-          <span className=" bg-foreground absolute top-0 right-0 size-3.5 border-2 border-background animate-in zoom-in duration-300" />
+          <span className="rounded-full bg-foreground absolute top-0 right-0 size-3.5 border-2 border-background animate-in zoom-in duration-300" />
         )}
       </Button>
       <Button

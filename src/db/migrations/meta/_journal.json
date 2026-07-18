@@ -15,6 +15,20 @@
       "when": 1782469870073,
       "tag": "0001_add_displayname_bio",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1783000000000,
+      "tag": "0008_add_flick_movie_media_type",
+      "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1783000001000,
+      "tag": "0009_add_like_media_type",
+      "breakpoints": true
     }
   ]
 }

@@ -16,7 +16,14 @@ export async function POST(request: NextRequest) {
 
   try {
     const sessionCode = body.sessionCode !== undefined ? body.sessionCode : session.sessionCode;
-    const result = await SessionService.addSwipe(session.user, sessionCode, body.itemId, body.direction, body.item);
+    const result = await SessionService.addSwipe(
+      session.user,
+      sessionCode,
+      body.itemId,
+      body.direction,
+      body.item,
+      body.mediaType ?? null
+    );
     return NextResponse.json({ success: true, ...result });
   } catch (error: any) {
     if (error.message.includes("limit reached")) {

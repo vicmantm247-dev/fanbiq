@@ -268,7 +268,7 @@ export class SessionService {
     await EventService.emit(EVENT_TYPES.SESSION_UPDATED, sessionCode);
   }
 
-  static async addSwipe(user: SessionData["user"], sessionCode: string | null | undefined, itemId: string, direction: "left" | "right", item?: any) {
+  static async addSwipe(user: SessionData["user"], sessionCode: string | null | undefined, itemId: string, direction: "left" | "right", item?: any, mediaType?: "movie" | "tv" | null) {
     // Check for existing swipes to handle conversions and re-likes
     // Should be impossible by not showing the same card twice
     const [existingLike, existingHidden] = await Promise.all([
@@ -401,7 +401,8 @@ export class SessionService {
         // Update existing like to move it to the top (fresh like)
         await db.update(likes).set({ 
           createdAt: sql`CURRENT_TIMESTAMP`,
-          isMatch: isMatch
+          isMatch: isMatch,
+          mediaType: mediaType ?? item?.mediaType ?? existingLike.mediaType ?? null,
         }).where(eq(likes.id, existingLike.id));
       } else {
         try {
@@ -410,6 +411,7 @@ export class SessionService {
             externalId: itemId,
             sessionCode: sessionCode || null,
             isMatch: isMatch,
+            mediaType: mediaType ?? item?.mediaType ?? null,
           });
         } catch (e: any) {
           // If it still fails with a unique constraint, someone else (or a concurrent request) already swiped

@@ -25,6 +25,7 @@ export const swipeSchema = z.object({
   direction: z.enum(["left", "right"]),
   item: z.any().optional(),
   sessionCode: z.string().length(4).optional().nullable(),
+  mediaType: z.enum(["movie", "tv"]).optional().nullable(),
 });
 
 export const sessionActionSchema = z.object({

@@ -8,6 +8,7 @@ export interface SwipePayload {
   direction: "left" | "right";
   item?: MediaItem;
   sessionCode?: string | null;
+  mediaType?: "movie" | "tv" | null;
 }
 
 export interface SwipeResponse {

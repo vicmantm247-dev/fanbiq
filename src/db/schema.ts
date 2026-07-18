@@ -28,6 +28,7 @@ export const likes = pgTable("Like", {
   externalUserId: text("externalUserId").notNull(),
   isMatch: boolean("isMatch").notNull().default(false),
   sessionCode: text("sessionCode").references(() => sessions.code, { onDelete: "cascade" }),
+  mediaType: text("media_type"),
   createdAt: timestamp("createdAt").notNull().default(sql`CURRENT_TIMESTAMP`),
 }, (table) => {
   return [

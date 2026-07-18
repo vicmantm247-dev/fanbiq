@@ -41,7 +41,9 @@ export async function GET(request: NextRequest) {
     const itemsMap = new Map<string, MediaItem>();
     await Promise.all(ids.map(async (id: string) => {
         try {
-            const item = await provider.getItemDetails(id, auth, { includeUserState: true });
+            const likeEntry = likesResult.find((entry: Like) => entry.externalId === id);
+            const mediaTypeHint = likeEntry?.mediaType as "movie" | "tv" | null | undefined;
+            const item = await provider.getItemDetails(id, auth, { includeUserState: true, mediaType: mediaTypeHint ?? undefined });
             if (item) itemsMap.set(id, item);
         } catch (error) {
             logger.error(`Failed to fetch details for ${id}`, error);
@@ -79,7 +81,7 @@ export async function GET(request: NextRequest) {
         
         return {
             ...item,
-            mediaType: item.mediaType,
+            mediaType: likeData.mediaType || item.mediaType || undefined,
             swipedAt: likeData.createdAt,
             sessionCode: likeData.sessionCode,
             isMatch: likeData.isMatch ?? false,
